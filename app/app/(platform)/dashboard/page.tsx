@@ -226,7 +226,7 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={viewsChartConfig} className="h-[240px] w-full">
+            <ChartContainer config={viewsChartConfig} className="h-60 w-full">
               <AreaChart data={viewsData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="fillViews" x1="0" y1="0" x2="0" y2="1">
@@ -278,7 +278,7 @@ export default function DashboardPage() {
             <CardDescription>Répartition ce mois</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={categoryChartConfig} className="h-[240px] w-full">
+            <ChartContainer config={categoryChartConfig} className="h-60 w-full">
               <BarChart data={categoryData} layout="vertical" margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
                 <XAxis 
@@ -365,7 +365,7 @@ export default function DashboardPage() {
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Actions</span>
                       </Button>

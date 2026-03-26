@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Bell, Search, Plus, ExternalLink } from "lucide-react"
+import Link from "next/link";
+import { Bell, Search, Plus, ExternalLink } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,8 +14,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 const notifications = [
   {
@@ -39,16 +39,16 @@ const notifications = [
     time: "Il y a 3h",
     unread: false,
   },
-]
+];
 
 export function AdminHeader() {
-  const unreadCount = notifications.filter((n) => n.unread).length
+  const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-border bg-background px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="h-6" />
-      
+
       <div className="flex flex-1 items-center gap-4">
         <form className="hidden md:flex flex-1 max-w-sm">
           <div className="relative w-full">
@@ -69,10 +69,12 @@ export function AdminHeader() {
             Voir le site
           </Link>
         </Button>
-        
-        <Button size="sm" className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Nouvel article</span>
+
+        <Button asChild size="sm" className="gap-1.5">
+          <Link href="/dashboard/articles/new">
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Nouvel article</span>
+          </Link>
         </Button>
 
         <DropdownMenu>
@@ -80,8 +82,8 @@ export function AdminHeader() {
             <Button variant="ghost" size="icon" className="relative h-9 w-9">
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <Badge 
-                  variant="destructive" 
+                <Badge
+                  variant="destructive"
                   className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]"
                 >
                   {unreadCount}
@@ -101,7 +103,10 @@ export function AdminHeader() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {notifications.map((notification) => (
-              <DropdownMenuItem key={notification.id} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
+              <DropdownMenuItem
+                key={notification.id}
+                className="flex flex-col items-start gap-1 p-3 cursor-pointer"
+              >
                 <div className="flex items-center gap-2 w-full">
                   {notification.unread && (
                     <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
@@ -120,5 +125,5 @@ export function AdminHeader() {
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }
