@@ -14,7 +14,7 @@ const footerLinks = {
     { name: "Dans la tête", href: "/series/tete" },
     { name: "Dans la nouvelle vie", href: "/series/nouvelle-vie" },
     { name: "Dans le cœur", href: "/series/coeur" },
-    { name: "Les quiz du Parisien", href: "/quiz" },
+    { name: "Les quiz d'Etheria Times", href: "/quiz" },
   ],
   sports: [
     { name: "PSG", href: "/sport/psg" },

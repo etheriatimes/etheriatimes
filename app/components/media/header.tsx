@@ -144,6 +144,13 @@ export function Header() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Subscribe Button */}
+            <Link href="/abonnement">
+              <Button className="bg-red-600 hover:bg-red-700 text-white h-8 px-3 text-sm hidden sm:flex">
+                S'abonner
+              </Button>
+            </Link>
           </div>
         </div>
 
