@@ -1,8 +1,8 @@
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { LiveTicker } from "@/components/live-ticker"
-import { ArticleCard } from "@/components/article-card"
-import { SectionTitle } from "@/components/section-title"
+import { Header } from "@/components/media/header"
+import { Footer } from "@/components/media/footer"
+import { LiveTicker } from "@/components/media/live-ticker"
+import { ArticleCard } from "@/components/media/article-card"
+import { SectionTitle } from "@/components/media/section-title"
 
 const liveTickerItems = [
   {

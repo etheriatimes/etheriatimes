@@ -1,7 +1,7 @@
 {
-  "name": "@aether-account/app",
+  "name": "@website/app",
   "version": "1.0.0",
-  "description": "Frontend application for Aether Account",
+  "description": "Frontend application for Etheria Times Website",
   "private": true,
   "type": "module",
   "scripts": {

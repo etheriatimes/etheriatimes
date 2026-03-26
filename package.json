@@ -1,7 +1,7 @@
 {
-  "name": "aether-account",
+  "name": "website",
   "version": "1.0.0",
-  "description": "Aether Account is a lightweight, open-source account management client built for privacy, speed, and seamless integration within the Aether Office ecosystem",
+  "description": "The Etheria Times daily news website",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -70,31 +70,26 @@
   "packageManager": "pnpm@8.15.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/skygenesisenterprise/giteria.git"
+    "url": "https://github.com/etheriatimes/website.git"
   },
   "keywords": [
-    "vault",
-    "password-manager",
-    "password-storage",
-    "password-security",
-    "password-management",
-    "password-generator",
-    "password-manager",
-    "password-storage",
-    "password-security",
-    "password-management",
-    "password-generator"
+    "news",
+    "website",
+    "react",
+    "nextjs",
+    "prisma",
+    "typescript"
   ],
   "author": {
-    "name": "Sky Genesis Enterprise",
-    "email": "developer@skygenesisenterprise.com",
-    "url": "https://skygenesisenterprise.com"
+    "name": "The Etheria Times",
+    "email": "developer@etheriatimes.com",
+    "url": "https://etheriatimes.com"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/skygenesisenterprise/giteria/issues"
+    "url": "https://github.com/etheriatimes/website/issues"
   },
-  "homepage": "https://github.com/skygenesisenterprise/giteria#readme",
+  "homepage": "https://github.com/etheriatimes/website#readme",
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
       "eslint --fix --quiet",
