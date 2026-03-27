@@ -249,3 +249,215 @@ export interface DataExportResponse {
   dataUrl?: string;
   error?: string;
 }
+
+// ==================== ETHERIA TYPES ====================
+
+export type ArticleStatus = "DRAFT" | "REVIEW" | "PUBLISHED" | "ARCHIVED";
+export type SubscriptionPlan = "ESSENTIAL" | "PREMIUM";
+export type SubscriptionStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "PAST_DUE";
+export type NotificationType = "ARTICLE" | "BOOKMARK" | "SYSTEM" | "ACCOUNT" | "COMMENT";
+
+export interface Article {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content: string;
+  contentHtml?: string;
+  status: ArticleStatus;
+  featured: boolean;
+  publishedAt?: string;
+  scheduledAt?: string;
+  viewCount: number;
+  readTime: number;
+  imageUrl?: string;
+  imageAlt?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
+  authorId: string;
+  categoryId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  color?: string;
+  isVisible: boolean;
+  parentId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  isApproved: boolean;
+  isFlagged: boolean;
+  flagReason?: string;
+  parentId?: string;
+  articleId: string;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Bookmark {
+  id: string;
+  userId: string;
+  articleId: string;
+  createdAt: string;
+}
+
+export interface ReadingHistory {
+  id: string;
+  userId: string;
+  articleId: string;
+  readAt: string;
+}
+
+export interface EtheriaNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link?: string;
+  isRead: boolean;
+  priority: string;
+  userId: string;
+  createdAt: string;
+}
+
+export interface Media {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  articleId?: string;
+  categoryId?: string;
+  createdAt: string;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  startedAt: string;
+  expiresAt?: string;
+  lastPaymentDate?: string;
+  nextPaymentDate?: string;
+  paymentMethod?: string;
+  paymentLast4?: string;
+  cancelAtPeriodEnd: boolean;
+}
+
+export interface SystemSettings {
+  id: string;
+  siteName: string;
+  siteDescription?: string;
+  siteUrl?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+  email?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  fromName?: string;
+  fromEmail?: string;
+  maintenanceMode: boolean;
+  registrationOpen: boolean;
+  commentsEnabled: boolean;
+  newsletterEnabled: boolean;
+  analyticsEnabled: boolean;
+  sslEnforced: boolean;
+  dockerImage: string;
+  version: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface ApiResponse {
+  success: boolean;
+  data?: unknown;
+  message?: string;
+  error?: string;
+}
+
+export interface ArticleListResponse extends ApiResponse {
+  data?: Article[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+}
+export interface ArticleResponse extends ApiResponse {
+  data?: Article;
+}
+export interface CategoryListResponse extends ApiResponse {
+  data?: Category[];
+  total?: number;
+}
+export interface CategoryResponse extends ApiResponse {
+  data?: Category;
+}
+export interface CommentListResponse extends ApiResponse {
+  data?: Comment[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+}
+export interface CommentResponse extends ApiResponse {
+  data?: Comment;
+}
+export interface BookmarkListResponse extends ApiResponse {
+  data?: Bookmark[];
+}
+export interface BookmarkResponse extends ApiResponse {
+  data?: Bookmark;
+}
+export interface HistoryListResponse extends ApiResponse {
+  data?: ReadingHistory[];
+}
+export interface NotificationListResponse extends ApiResponse {
+  data?: EtheriaNotification[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+}
+export interface NotificationResponse extends ApiResponse {}
+export interface SubscriptionResponse extends ApiResponse {}
+export interface MediaListResponse extends ApiResponse {
+  data?: Media[];
+}
+export interface MediaResponse extends ApiResponse {}
+export interface SettingsResponse extends ApiResponse {
+  data?: SystemSettings;
+}
+export interface EtheriaUserResponse extends ApiResponse {}
+export interface EtheriaUserListResponse extends ApiResponse {
+  data?: User[];
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+}

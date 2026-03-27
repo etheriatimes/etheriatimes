@@ -1,65 +1,101 @@
-# Development Dockerfile for Aether Account
-# Usage: docker compose -f docker-compose.dev.yml up
+# Development Dockerfile for Etheria Times
+FROM node:20-alpine
 
-FROM node:20-alpine AS base
-
-# Set working directory
 WORKDIR /app
 
-# Install OS dependencies
+# Install system dependencies
 RUN apk add --no-cache \
     wget \
     ca-certificates \
     curl \
     git \
     bash \
-    nginx \
     build-base \
     libc6-compat
 
-# Install Go
-RUN wget -q https://go.dev/dl/go1.25.4.linux-amd64.tar.gz -O /tmp/go.tar \
-    && tar -C /usr/local -xzf /tmp/go.tar \
-    && rm /tmp/go.tar
+# Install Go (multi-arch)
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+        x86_64)  GOARCH="amd64" ;; \
+        aarch64) GOARCH="arm64" ;; \
+        *) echo "Unsupported arch: $ARCH" && exit 1 ;; \
+    esac && \
+    wget -q "https://go.dev/dl/go1.24.2.linux-${GOARCH}.tar.gz" -O /tmp/go.tar.gz \
+    && tar -C /usr/local -xzf /tmp/go.tar.gz \
+    && rm /tmp/go.tar.gz
 
 ENV PATH="/usr/local/go/bin:/go/bin:${PATH}"
 ENV GOPATH="/go"
 
-# Install development Go tools
-RUN mkdir -p /go/bin \
-    && go install github.com/air-verse/air@latest \
-    && go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest \
-    && go install github.com/pressly/goose/cmd/goose@latest
-
-# Enable pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy only package files first (for caching pnpm install)
-COPY app/package.json app/pnpm-lock.yaml* ./app/
-
-# Install dependencies
-WORKDIR /app/app
-RUN pnpm install
-
-# Copy application and server code
-COPY app/ /app/app/
-COPY server/ /app/server/
-COPY go.mod go.sum* /app/
+# Copy Go module files
+COPY go.mod go.sum* ./
 
 # Download Go modules
-WORKDIR /app
 RUN go mod download
 
-# Copy Nginx config
-COPY app/nginx.conf /etc/nginx/http.d/default.conf
+# Install Air for hot-reload
+RUN go install github.com/air-verse/air@latest
 
-# Expose ports
-EXPOSE 3000
+# Copy Next.js app package files
+COPY app/package.json app/pnpm-lock.yaml* ./app/
 
-# Start container
-# - Creates logs/tmp directories
-# - Ensures pnpm dependencies are linked
-# - Starts nginx
-# - Starts Air for live reload (Go)
-# - Starts Next.js dev server
-CMD ["sh", "-c", "mkdir -p /app/app/src/logs /app/tmp && cd /app/app && pnpm install --frozen-lockfile || true && nginx && cd /app && air -c .air.toml"]
+# Enable pnpm and install dependencies (version épinglée)
+WORKDIR /app/app
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate && pnpm install
+
+# Copy Next.js source files
+COPY app/app/ ./app/
+COPY app/components/ ./components/
+COPY app/config/ ./config/
+COPY app/context/ ./context/
+COPY app/hooks/ ./hooks/
+COPY app/lib/ ./lib/
+COPY app/public/ ./public/
+COPY app/styles/ ./styles/
+COPY app/package.json ./
+COPY app/tsconfig.json ./
+COPY app/next.config.ts ./
+COPY app/postcss.config.mjs ./
+COPY app/components.json ./
+COPY app/eslint.config.mjs ./
+COPY app/proxy.ts ./ 
+
+# Copy Go server files
+WORKDIR /app
+COPY server/ ./server/
+
+# Copy Air config and env
+COPY .air.toml ./
+COPY .env.example ./.env
+
+# Create entrypoint script
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo 'echo "=========================================="' >> /entrypoint.sh && \
+    echo 'echo "  Etheria Times - Services Starting"' >> /entrypoint.sh && \
+    echo 'echo "  - Frontend: http://localhost:3000"' >> /entrypoint.sh && \
+    echo 'echo "  - API:      http://localhost:8080"' >> /entrypoint.sh && \
+    echo 'echo "  - DB:       localhost:5432 (external)"' >> /entrypoint.sh && \
+    echo 'echo "=========================================="' >> /entrypoint.sh && \
+    echo 'echo ""' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo 'cd /app/server' >> /entrypoint.sh && \
+    echo 'echo "[*] Starting Go API server on :8080..."' >> /entrypoint.sh && \
+    echo 'air -c /app/.air.toml & API_PID=$!' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo 'cd /app/app' >> /entrypoint.sh && \
+    echo 'echo "[*] Starting Next.js on :3000..."' >> /entrypoint.sh && \
+    echo 'pnpm dev & NEXT_PID=$!' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo 'echo "[*] All services started! Press Ctrl+C to stop"' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo 'trap "echo '\''[*] Stopping services...'\''; kill $API_PID $NEXT_PID 2>/dev/null; exit 0" SIGINT SIGTERM' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo 'wait' >> /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 3000 8080
+
+ENTRYPOINT ["/entrypoint.sh"]

@@ -6,10 +6,10 @@ const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   if (isProduction) {
-    return "https://api.account.skygenesisenterprise.com";
+    return "https://api.etheriatimes.com";
   }
   if (isStaging) {
-    return "https://api-staging.account.skygenesisenterprise.com";
+    return "https://api-staging.etheriatimes.com";
   }
   return "http://localhost:8080";
 };
@@ -102,11 +102,42 @@ import type {
   GroupResponse,
   PrivacyResponse,
   DataExportResponse,
+  Article,
+  ArticleListResponse,
+  ArticleResponse,
+  Category,
+  CategoryListResponse,
+  CategoryResponse,
+  Comment,
+  CommentListResponse,
+  CommentResponse,
+  Bookmark,
+  BookmarkListResponse,
+  BookmarkResponse,
+  ReadingHistory,
+  HistoryListResponse,
+  EtheriaNotification,
+  NotificationListResponse,
+  NotificationResponse,
+  Subscription,
+  SubscriptionResponse,
+  Media,
+  MediaListResponse,
+  MediaResponse,
+  SystemSettings,
+  SettingsResponse,
+  User,
+  EtheriaUserResponse,
+  EtheriaUserListResponse,
+  PaginatedResponse,
 } from "./types";
 
 export const authApi = {
   login: (email: string, password: string) =>
     apiClient.post<AuthResponse>("/api/v1/auth/login", { email, password }),
+
+  register: (data: { email: string; password: string; firstName?: string; lastName?: string }) =>
+    apiClient.post<AuthResponse>("/api/v1/auth/register", data),
 
   logout: () => apiClient.post<AuthResponse>("/api/v1/auth/logout"),
 
@@ -309,4 +340,213 @@ export const privacyApi = {
 
   deleteAccount: (password: string, confirm: boolean) =>
     apiClient.post<AuthResponse>("/api/v1/privacy/delete", { password, confirm }),
+};
+
+// ==================== ETHERIA API ====================
+
+export const articlesApi = {
+  list: (params?: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    category?: string;
+    search?: string;
+  }) => {
+    const queryParams: Record<string, string> = {};
+    if (params?.page) queryParams.page = String(params.page);
+    if (params?.pageSize) queryParams.pageSize = String(params.pageSize);
+    if (params?.status) queryParams.status = params.status;
+    if (params?.category) queryParams.category = params.category;
+    if (params?.search) queryParams.search = params.search;
+    return apiClient.get<ArticleListResponse>("/api/v1/articles", { params: queryParams });
+  },
+
+  get: (id: string) => apiClient.get<ArticleResponse>(`/api/v1/articles/${id}`),
+
+  getBySlug: (slug: string) => apiClient.get<ArticleResponse>(`/api/v1/articles/slug/${slug}`),
+
+  create: (data: {
+    title: string;
+    content: string;
+    excerpt?: string;
+    categoryId?: string;
+    imageUrl?: string;
+    imageAlt?: string;
+    seoTitle?: string;
+    seoDescription?: string;
+    seoKeywords?: string;
+  }) => apiClient.post<ArticleResponse>("/api/v1/articles", data),
+
+  update: (
+    id: string,
+    data: {
+      title?: string;
+      content?: string;
+      excerpt?: string;
+      categoryId?: string;
+      status?: string;
+      imageUrl?: string;
+      imageAlt?: string;
+      seoTitle?: string;
+      seoDescription?: string;
+      seoKeywords?: string;
+      featured?: boolean;
+      scheduledAt?: string;
+    }
+  ) => apiClient.put<ArticleResponse>(`/api/v1/articles/${id}`, data),
+
+  delete: (id: string) => apiClient.delete<ArticleResponse>(`/api/v1/articles/${id}`),
+
+  publish: (id: string) => apiClient.post<ArticleResponse>(`/api/v1/articles/${id}/publish`),
+
+  archive: (id: string) => apiClient.post<ArticleResponse>(`/api/v1/articles/${id}/archive`),
+
+  toggleFeatured: (id: string) => apiClient.post<ArticleResponse>(`/api/v1/articles/${id}/feature`),
+};
+
+export const categoriesApi = {
+  list: () => apiClient.get<CategoryListResponse>("/api/v1/categories"),
+
+  get: (id: string) => apiClient.get<CategoryResponse>(`/api/v1/categories/${id}`),
+
+  create: (data: { name: string; description?: string; color?: string; parentId?: string }) =>
+    apiClient.post<CategoryResponse>("/api/v1/categories", data),
+
+  update: (
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      color?: string;
+      parentId?: string;
+      isVisible?: boolean;
+    }
+  ) => apiClient.put<CategoryResponse>(`/api/v1/categories/${id}`, data),
+
+  delete: (id: string) => apiClient.delete<CategoryResponse>(`/api/v1/categories/${id}`),
+};
+
+export const commentsApi = {
+  list: (articleId: string, params?: { page?: number; pageSize?: number }) => {
+    const queryParams: Record<string, string> = {};
+    if (params?.page) queryParams.page = String(params.page);
+    if (params?.pageSize) queryParams.pageSize = String(params.pageSize);
+    return apiClient.get<CommentListResponse>(`/api/v1/comments/article/${articleId}`, {
+      params: queryParams,
+    });
+  },
+
+  create: (data: { content: string; articleId: string; parentId?: string }) =>
+    apiClient.post<CommentResponse>("/api/v1/comments", data),
+
+  update: (id: string, data: { content?: string; isApproved?: boolean }) =>
+    apiClient.put<CommentResponse>(`/api/v1/comments/${id}`, data),
+
+  delete: (id: string) => apiClient.delete<CommentResponse>(`/api/v1/comments/${id}`),
+
+  flag: (id: string) => apiClient.post<CommentResponse>(`/api/v1/comments/${id}/flag`),
+
+  approve: (id: string) => apiClient.post<CommentResponse>(`/api/v1/comments/${id}/approve`),
+};
+
+export const bookmarksApi = {
+  list: () => apiClient.get<BookmarkListResponse>("/api/v1/user/bookmarks"),
+
+  add: (articleId: string) =>
+    apiClient.post<BookmarkResponse>("/api/v1/user/bookmarks", { articleId }),
+
+  remove: (articleId: string) =>
+    apiClient.delete<BookmarkResponse>(`/api/v1/user/bookmarks/${articleId}`),
+};
+
+export const historyApi = {
+  list: () => apiClient.get<HistoryListResponse>("/api/v1/user/history"),
+
+  add: (articleId: string) =>
+    apiClient.post<HistoryListResponse>("/api/v1/user/history", { articleId }),
+
+  clear: () => apiClient.delete<HistoryListResponse>("/api/v1/user/history"),
+
+  remove: (articleId: string) =>
+    apiClient.delete<HistoryListResponse>(`/api/v1/user/history/${articleId}`),
+};
+
+export const notificationsApi = {
+  list: (params?: { page?: number; pageSize?: number }) => {
+    const queryParams: Record<string, string> = {};
+    if (params?.page) queryParams.page = String(params.page);
+    if (params?.pageSize) queryParams.pageSize = String(params.pageSize);
+    return apiClient.get<NotificationListResponse>("/api/v1/user/notifications", {
+      params: queryParams,
+    });
+  },
+
+  markRead: (id: string) =>
+    apiClient.put<NotificationResponse>(`/api/v1/user/notifications/${id}/read`),
+
+  markAllRead: () => apiClient.put<NotificationResponse>("/api/v1/user/notifications/read-all"),
+
+  delete: (id: string) =>
+    apiClient.delete<NotificationResponse>(`/api/v1/user/notifications/${id}`),
+};
+
+export const subscriptionApi = {
+  get: () => apiClient.get<SubscriptionResponse>("/api/v1/user/subscription"),
+
+  create: (plan: "ESSENTIAL" | "PREMIUM") =>
+    apiClient.post<SubscriptionResponse>("/api/v1/user/subscription", { plan }),
+
+  update: (plan: "ESSENTIAL" | "PREMIUM") =>
+    apiClient.put<SubscriptionResponse>("/api/v1/user/subscription", { plan }),
+
+  cancel: () => apiClient.post<SubscriptionResponse>("/api/v1/user/subscription/cancel"),
+};
+
+export const mediaApi = {
+  list: () => apiClient.get<MediaListResponse>("/api/v1/media"),
+
+  upload: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const token = localStorage.getItem("accessToken");
+    const response = await fetch(`${API_BASE_URL}/api/v1/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    return response.json();
+  },
+
+  delete: (id: string) => apiClient.delete<MediaResponse>(`/api/v1/media/${id}`),
+};
+
+export const settingsApi = {
+  get: () => apiClient.get<SettingsResponse>("/api/v1/settings"),
+
+  update: (data: Partial<SystemSettings>) =>
+    apiClient.put<SettingsResponse>("/api/v1/settings", data),
+
+  testEmail: () => apiClient.post<SettingsResponse>("/api/v1/settings/test-email"),
+};
+
+export const adminUsersApi = {
+  list: (params?: { page?: number; pageSize?: number; search?: string; role?: string }) => {
+    const queryParams: Record<string, string> = {};
+    if (params?.page) queryParams.page = String(params.page);
+    if (params?.pageSize) queryParams.pageSize = String(params.pageSize);
+    if (params?.search) queryParams.search = params.search;
+    if (params?.role) queryParams.role = params.role;
+    return apiClient.get<EtheriaUserListResponse>("/api/v1/admin/users", { params: queryParams });
+  },
+
+  get: (id: string) => apiClient.get<EtheriaUserResponse>(`/api/v1/admin/users/${id}`),
+
+  update: (
+    id: string,
+    data: { firstName?: string; lastName?: string; role?: string; isActive?: boolean }
+  ) => apiClient.put<EtheriaUserResponse>(`/api/v1/admin/users/${id}`, data),
+
+  delete: (id: string) => apiClient.delete<EtheriaUserResponse>(`/api/v1/admin/users/${id}`),
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -19,6 +19,7 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -55,29 +56,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { articlesApi } from "@/lib/api";
 
-// Types
 type ArticleStatus = "published" | "draft" | "review" | "archived";
 
-interface Article {
+interface ArticleDisplay {
   id: string;
   title: string;
   excerpt: string;
   category: string;
   author: string;
   status: ArticleStatus;
-  publishedAt: string | null;
+  publishedAt: string | undefined;
   updatedAt: string;
   views: number;
   image: string;
 }
 
-// Mock data
-const mockArticles: Article[] = [
+const mockArticles: ArticleDisplay[] = [
   {
     id: "1",
     title: "Les nouvelles réformes économiques annoncées par le gouvernement",
-    excerpt: "Le Premier ministre a dévoilé un plan ambitieux pour relancer l'économie...",
+    excerpt: "Le Premier ministre a dévoiler un plan ambitieux pour relancer l'économie...",
     category: "Politique",
     author: "Marie Dupont",
     status: "published",
@@ -105,7 +105,7 @@ const mockArticles: Article[] = [
     category: "Culture",
     author: "Sophie Laurent",
     status: "draft",
-    publishedAt: null,
+    publishedAt: undefined,
     updatedAt: "2026-03-26",
     views: 0,
     image: "https://images.unsplash.com/photo-1541367777708-7905fe3296c0?w=100&h=60&fit=crop",
@@ -117,7 +117,7 @@ const mockArticles: Article[] = [
     category: "International",
     author: "Pierre Moreau",
     status: "review",
-    publishedAt: null,
+    publishedAt: undefined,
     updatedAt: "2026-03-26",
     views: 0,
     image: "https://images.unsplash.com/photo-1524522173746-f628baad3644?w=100&h=60&fit=crop",
@@ -153,14 +153,14 @@ const mockArticles: Article[] = [
     category: "Économie",
     author: "Marie Dupont",
     status: "draft",
-    publishedAt: null,
+    publishedAt: undefined,
     updatedAt: "2026-03-26",
     views: 0,
     image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=60&fit=crop",
   },
   {
     id: "8",
-    title: "Le festival de cinéma dévoile sa sélection officielle",
+    title: "Le festival de cinéma dévoiler sa sélection officielle",
     excerpt: "Cette année, 24 films seront en compétition pour la prestigieuse récompense...",
     category: "Culture",
     author: "Sophie Laurent",
@@ -204,15 +204,47 @@ const statusConfig: Record<
 };
 
 export default function ArticlesPage() {
-  const [articles, setArticles] = useState<Article[]>(mockArticles);
+  const [articles, setArticles] = useState<ArticleDisplay[]>(mockArticles);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Toutes");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
+  const [articleToDelete, setArticleToDelete] = useState<ArticleDisplay | null>(null);
 
-  // Filter articles
+  useEffect(() => {
+    loadArticles();
+  }, [selectedStatus, selectedCategory]);
+
+  async function loadArticles() {
+    setIsLoading(true);
+    try {
+      const status = selectedStatus === "all" ? undefined : selectedStatus;
+      const category = selectedCategory === "Toutes" ? undefined : selectedCategory;
+      const response = await articlesApi.list({ status, category, pageSize: 50 });
+      if (response.success && response.data) {
+        const mappedArticles = response.data.map((article) => ({
+          id: article.id,
+          title: article.title,
+          excerpt: article.excerpt || "",
+          category: article.categoryId || "Non catégorisé",
+          author: article.authorId,
+          status: article.status.toLowerCase() as ArticleStatus,
+          publishedAt: article.publishedAt,
+          updatedAt: article.updatedAt,
+          views: article.viewCount,
+          image: article.imageUrl || "",
+        }));
+        setArticles(mappedArticles);
+      }
+    } catch (error) {
+      console.error("Failed to load articles:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   const filteredArticles = articles.filter((article) => {
     const matchesSearch =
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -222,7 +254,6 @@ export default function ArticlesPage() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  // Selection handlers
   const toggleSelectAll = () => {
     if (selectedArticles.length === filteredArticles.length) {
       setSelectedArticles([]);
@@ -237,22 +268,26 @@ export default function ArticlesPage() {
     );
   };
 
-  // Delete handler
-  const handleDelete = (article: Article) => {
+  const handleDelete = (article: ArticleDisplay) => {
     setArticleToDelete(article);
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (articleToDelete) {
-      setArticles((prev) => prev.filter((a) => a.id !== articleToDelete.id));
-      setSelectedArticles((prev) => prev.filter((id) => id !== articleToDelete.id));
+      try {
+        await articlesApi.delete(articleToDelete.id);
+        setArticles((prev) => prev.filter((a) => a.id !== articleToDelete.id));
+        setSelectedArticles((prev) => prev.filter((id) => id !== articleToDelete.id));
+      } catch (error) {
+        console.error("Failed to delete article:", error);
+      }
     }
     setDeleteDialogOpen(false);
     setArticleToDelete(null);
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString("fr-FR", {
       day: "numeric",
@@ -270,15 +305,19 @@ export default function ArticlesPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Articles</h1>
           <p className="text-sm text-muted-foreground">Gérez et publiez vos articles</p>
         </div>
+        <Button asChild>
+          <Link href="/dashboard/articles/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvel article
+          </Link>
+        </Button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -318,7 +357,6 @@ export default function ArticlesPage() {
         </div>
       </div>
 
-      {/* Bulk Actions */}
       {selectedArticles.length > 0 && (
         <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/50 p-3">
           <span className="text-sm text-muted-foreground">
@@ -339,7 +377,6 @@ export default function ArticlesPage() {
         </div>
       )}
 
-      {/* Articles Table */}
       <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
@@ -374,7 +411,13 @@ export default function ArticlesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredArticles.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                </TableCell>
+              </TableRow>
+            ) : filteredArticles.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center">
                   <div className="flex flex-col items-center gap-2">
@@ -397,14 +440,16 @@ export default function ArticlesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded">
-                          <Image
-                            src={article.image}
-                            alt={article.title}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
+                        {article.image && (
+                          <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded">
+                            <Image
+                              src={article.image}
+                              alt={article.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <p className="truncate font-medium text-foreground">{article.title}</p>
                           <p className="truncate text-xs text-muted-foreground">
@@ -476,7 +521,6 @@ export default function ArticlesPage() {
           </TableBody>
         </Table>
 
-        {/* Pagination */}
         <div className="flex items-center justify-between border-t border-border px-4 py-3">
           <p className="text-sm text-muted-foreground">
             {filteredArticles.length} article{filteredArticles.length > 1 ? "s" : ""} sur{" "}
@@ -495,7 +539,6 @@ export default function ArticlesPage() {
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

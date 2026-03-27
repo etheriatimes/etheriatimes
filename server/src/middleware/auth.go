@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/skygenesisenterprise/aether-account/server/src/services"
+	"github.com/etheriatimes/website/server/src/services"
 
 	"github.com/gin-gonic/gin"
 )

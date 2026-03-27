@@ -7,134 +7,106 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+}
+
+enum ArticleStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SubscriptionPlan {
+  ESSENTIAL
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+}
+
+enum NotificationType {
+  ARTICLE
+  BOOKMARK
+  SYSTEM
+  ACCOUNT
+  COMMENT
+}
+
 model User {
-  id                  String    @id @default(cuid())
-  email               String    @unique
-  name                String?
-  firstName           String?
-  lastName            String?
-  password            String?
-  gender              String?
-  birthDate           DateTime?
-  phone               String?
-  avatarUrl           String?
-  language            String    @default("Français (France)")
-  aetherId            String    @unique
-  accountType         String    @default("Entreprise")
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  emailVerified        DateTime?
-  twoFactorEnabled     Boolean   @default(false)
-  twoFactorSecret     String?
-  passkeyEnabled      Boolean   @default(true)
-  secureNavigation    Boolean   @default(false)
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String?
+  firstName         String?
+  lastName          String?
+  phone             String?
+  avatarUrl         String?
+  role              Role      @default(USER)
+  isActive          Boolean   @default(true)
+  emailVerified     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  passwords           Password[]
-  addresses           Address[]
-  recoveryEmails     RecoveryEmail[]
-  recoveryPhones     RecoveryPhone[]
-  devices             Device[]
-  sessions            Session[]
-  thirdPartyApps      ThirdPartyApp[]
-  securityActivities  SecurityActivity[]
-  passwordKeys        PasswordKey[]
-  authenticators      Authenticator[]
+  profile           UserProfile?
+  subscription      Subscription?
+  articles          Article[]
+  comments          Comment[]
+  bookmarks         Bookmark[]
+  readingHistory    ReadingHistory[]
+  notifications     Notification[]
+  sessions          Session[]
+  securityActivities SecurityActivity[]
 }
 
-model Password {
+model UserProfile {
   id          String   @id @default(cuid())
-  name        String
-  username    String
-  password    String
-  url         String?
-  favorite    Boolean  @default(false)
-  category    String
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  userId      String
+  bio         String?
+  language    String   @default("fr")
+  timezone    String   @default("Europe/Paris")
+  preferences Json     @default("{}")
+  userId      String   @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([category])
 }
 
-model Address {
-  id        String   @id @default(cuid())
-  label     String
-  value     String
-  isPrimary Boolean  @default(false)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Subscription {
+  id                String             @id @default(cuid())
+  plan              SubscriptionPlan   @default(PREMIUM)
+  status            SubscriptionStatus @default(ACTIVE)
+  startedAt         DateTime           @default(now())
+  expiresAt         DateTime?
+  lastPaymentDate   DateTime?
+  nextPaymentDate   DateTime?
+  paymentMethod     String?
+  paymentLast4      String?
+  cancelAtPeriodEnd  Boolean            @default(false)
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-}
-
-model RecoveryEmail {
-  id        String   @id @default(cuid())
-  email     String
-  isPrimary Boolean  @default(false)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([email, userId])
-  @@index([userId])
-}
-
-model RecoveryPhone {
-  id        String   @id @default(cuid())
-  phone     String
-  isPrimary Boolean  @default(false)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([phone, userId])
-  @@index([userId])
-}
-
-model Device {
-  id          String   @id @default(cuid())
-  name        String
-  type        String
-  os          String?
-  browser     String?
-  lastSeen    DateTime @default(now())
-  isTrusted   Boolean  @default(false)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  sessions    Session[]
-
-  @@index([userId])
-  @@index([type])
+  @@index([status])
 }
 
 model Session {
   id            String    @id @default(cuid())
   token         String    @unique
-  deviceId      String?
-  device        Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
-  userId        String
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   ipAddress     String?
   userAgent     String?
   expiresAt     DateTime?
   createdAt     DateTime  @default(now())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([token])
-  @@index([deviceId])
-}
-
-model ThirdPartyApp {
-  id          String   @id @default(cuid())
-  name        String
-  accessLevel String
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([name, userId])
-  @@index([userId])
 }
 
 model SecurityActivity {
@@ -153,30 +125,163 @@ model SecurityActivity {
   @@index([time])
 }
 
-model PasswordKey {
-  id          String   @id @default(cuid())
-  name        String
-  publicKey   String
-  credentialId String
-  counter     Int      @default(0)
-  createdAt   DateTime @default(now())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  color       String?
+  isVisible   Boolean   @default(true)
+  parentId    String?
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  articles    Article[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  @@unique([credentialId])
+  @@index([parentId])
+  @@index([slug])
+}
+
+model Article {
+  id            String        @id @default(cuid())
+  title         String
+  slug          String        @unique
+  excerpt       String?
+  content       String
+  contentHtml   String?
+  status        ArticleStatus @default(DRAFT)
+  featured      Boolean       @default(false)
+  publishedAt   DateTime?
+  scheduledAt   DateTime?
+  viewCount     Int           @default(0)
+  readTime      Int           @default(5)
+  imageUrl      String?
+  imageAlt      String?
+  seoTitle      String?
+  seoDescription String?
+  seoKeywords   String?
+  authorId      String
+  author        User          @relation(fields: [authorId], references: [id])
+  categoryId    String?
+  category      Category?     @relation(fields: [categoryId], references: [id])
+  comments      Comment[]
+  bookmarks     Bookmark[]
+  readingHistory ReadingHistory[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([slug])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  content   String
+  isApproved Boolean  @default(true)
+  isFlagged Boolean  @default(false)
+  flagReason String?
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  articleId String
+  article   Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([articleId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, articleId])
   @@index([userId])
 }
 
-model Authenticator {
-  id           String   @id @default(cuid())
-  name         String
-  publicKey    String
-  credentialId String
-  counter      Int      @default(0)
-  createdAt    DateTime @default(now())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model ReadingHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  readAt    DateTime @default(now())
 
-  @@unique([credentialId])
+  @@unique([userId, articleId])
   @@index([userId])
+  @@index([readAt])
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  link        String?
+  isRead      Boolean          @default(false)
+  priority    String           @default("low")
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model Media {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  alt         String?
+  width       Int?
+  height      Int?
+  articleId   String?
+  categoryId  String?
+  createdAt   DateTime @default(now())
+
+  @@index([articleId])
+  @@index([categoryId])
+}
+
+model SystemSettings {
+  id                String   @id @default(cuid())
+  siteName          String   @default("The Etheria Times")
+  siteDescription   String?
+  siteUrl           String?
+  logoUrl           String?
+  faviconUrl        String?
+  email             String?
+  smtpHost          String?
+  smtpPort          Int?
+  smtpUser          String?
+  smtpPassword      String?
+  fromName          String?
+  fromEmail         String?
+  maintenanceMode   Boolean  @default(false)
+  registrationOpen  Boolean  @default(true)
+  commentsEnabled   Boolean  @default(true)
+  newsletterEnabled Boolean @default(true)
+  analyticsEnabled  Boolean  @default(true)
+  sslEnforced       Boolean  @default(true)
+  apiPublicKey      String?
+  apiSecretKey      String?
+  dockerImage       String   @default("etheriatimes/etheriatimes:latest")
+  version           String   @default("1.0.0")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }

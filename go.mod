@@ -1,4 +1,4 @@
-module github.com/skygenesisenterprise/aether-account
+module github.com/etheriatimes/website
 
 go 1.25.5
 

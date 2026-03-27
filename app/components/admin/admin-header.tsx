@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Search, Plus, ExternalLink } from "lucide-react";
+import { Bell, Search, ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,13 +67,6 @@ export function AdminHeader() {
           <Link href="/" target="_blank">
             <ExternalLink className="h-3.5 w-3.5" />
             Voir le site
-          </Link>
-        </Button>
-
-        <Button asChild size="sm" className="gap-1.5">
-          <Link href="/dashboard/articles/new">
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Nouvel article</span>
           </Link>
         </Button>
 

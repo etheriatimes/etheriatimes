@@ -1,42 +1,30 @@
-"use client"
+"use client";
 
-import { 
-  FileText, 
-  Eye, 
-  Users, 
+import {
+  FileText,
+  Eye,
+  Users,
   MessageSquare,
   TrendingUp,
   Clock,
   ArrowUpRight,
   MoreHorizontal,
-} from "lucide-react"
-import Link from "next/link"
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from "recharts"
+} from "lucide-react";
+import Link from "next/link";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-import { StatsCard } from "@/components/admin/stats-card"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
+import { StatsCard } from "@/components/admin/stats-card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 // Données pour les graphiques
 const viewsData = [
@@ -47,7 +35,7 @@ const viewsData = [
   { date: "Ven", views: 21500, visitors: 14200 },
   { date: "Sam", views: 19300, visitors: 12900 },
   { date: "Dim", views: 15600, visitors: 10100 },
-]
+];
 
 const categoryData = [
   { category: "Politique", articles: 45, color: "var(--chart-1)" },
@@ -55,7 +43,7 @@ const categoryData = [
   { category: "International", articles: 32, color: "var(--chart-3)" },
   { category: "Culture", articles: 28, color: "var(--chart-4)" },
   { category: "Sport", articles: 24, color: "var(--chart-5)" },
-]
+];
 
 const recentArticles = [
   {
@@ -108,14 +96,14 @@ const recentArticles = [
     views: 5670,
     date: "Il y a 8h",
   },
-]
+];
 
 const topAuthors = [
   { name: "Marie Dupont", articles: 24, views: 45200, avatar: "" },
   { name: "Jean Martin", articles: 19, views: 38100, avatar: "" },
   { name: "Sophie Bernard", articles: 17, views: 32800, avatar: "" },
   { name: "Lucas Petit", articles: 15, views: 28400, avatar: "" },
-]
+];
 
 const viewsChartConfig = {
   views: {
@@ -126,25 +114,25 @@ const viewsChartConfig = {
     label: "Visiteurs",
     color: "oklch(0.7 0.15 250)",
   },
-}
+};
 
 const categoryChartConfig = {
   articles: {
     label: "Articles",
     color: "oklch(0.5 0.2 25)",
   },
-}
+};
 
 function getStatusBadge(status: string) {
   switch (status) {
     case "published":
-      return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Publié</Badge>
+      return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Publié</Badge>;
     case "draft":
-      return <Badge variant="secondary">Brouillon</Badge>
+      return <Badge variant="secondary">Brouillon</Badge>;
     case "review":
-      return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">En révision</Badge>
+      return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">En révision</Badge>;
     default:
-      return <Badge variant="outline">{status}</Badge>
+      return <Badge variant="outline">{status}</Badge>;
   }
 }
 
@@ -153,7 +141,7 @@ function getInitials(name: string) {
     .split(" ")
     .map((n) => n[0])
     .join("")
-    .toUpperCase()
+    .toUpperCase();
 }
 
 export default function DashboardPage() {
@@ -239,14 +227,14 @@ export default function DashboardPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis 
-                  dataKey="date" 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
                   axisLine={false}
                   tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                 />
-                <YAxis 
-                  tickLine={false} 
+                <YAxis
+                  tickLine={false}
                   axisLine={false}
                   tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                   tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
@@ -279,28 +267,28 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={categoryChartConfig} className="h-60 w-full">
-              <BarChart data={categoryData} layout="vertical" margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <BarChart
+                data={categoryData}
+                layout="vertical"
+                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
-                <XAxis 
-                  type="number" 
-                  tickLine={false} 
+                <XAxis
+                  type="number"
+                  tickLine={false}
                   axisLine={false}
                   tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                 />
-                <YAxis 
-                  type="category" 
-                  dataKey="category" 
-                  tickLine={false} 
+                <YAxis
+                  type="category"
+                  dataKey="category"
+                  tickLine={false}
                   axisLine={false}
                   tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                   width={80}
                 />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar 
-                  dataKey="articles" 
-                  fill="var(--color-articles)" 
-                  radius={[0, 4, 4, 0]}
-                />
+                <Bar dataKey="articles" fill="var(--color-articles)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ChartContainer>
           </CardContent>
@@ -357,7 +345,7 @@ export default function DashboardPage() {
                           <span className="text-xs text-muted-foreground">•</span>
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Eye className="h-3 w-3" />
-                            {article.views.toLocaleString()}
+                            {article.views.toLocaleString("en-US")}
                           </span>
                         </>
                       )}
@@ -397,9 +385,7 @@ export default function DashboardPage() {
             <div className="divide-y divide-border">
               {topAuthors.map((author, index) => (
                 <div key={author.name} className="flex items-center gap-3 px-6 py-3">
-                  <span className="text-sm font-medium text-muted-foreground w-4">
-                    {index + 1}
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground w-4">{index + 1}</span>
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={author.avatar} />
                     <AvatarFallback className="text-xs bg-primary/10 text-primary">
@@ -419,5 +405,5 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

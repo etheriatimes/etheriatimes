@@ -1,26 +1,48 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { authApi } from "@/lib/api/client";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 1500))
-    setIsLoading(false)
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const response = await authApi.login(email, password);
+
+      if (response.success && response.data) {
+        authApi.storeTokens(response.data.accessToken, response.data.refreshToken);
+        if (response.data.user) {
+          authApi.storeUser(response.data.user);
+        }
+        router.push("/user");
+      } else {
+        setError(response.error || "Email ou mot de passe incorrect");
+      }
+    } catch (err) {
+      setError("Une erreur est survenue. Veuillez réessayer.");
+      console.error("Login error:", err);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -34,10 +56,8 @@ export default function LoginPage() {
           priority
           className="object-cover"
         />
-        {/* Overlay dégradé */}
         <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-black/20" />
 
-        {/* Contenu superposé */}
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           <Link href="/" className="block">
             <span className="font-serif text-2xl font-bold text-white tracking-tight">
@@ -61,7 +81,6 @@ export default function LoginPage() {
 
       {/* Right panel — formulaire */}
       <div className="flex-1 flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 bg-background">
-        {/* Logo mobile */}
         <div className="lg:hidden mb-10">
           <Link href="/">
             <span className="font-serif text-2xl font-bold text-foreground tracking-tight">
@@ -71,21 +90,28 @@ export default function LoginPage() {
         </div>
 
         <div className="mx-auto w-full max-w-sm">
-          {/* En-tête */}
           <div className="mb-8">
             <div className="w-8 h-0.5 bg-primary mb-4" />
             <h1 className="font-serif text-3xl font-bold text-foreground tracking-tight">
               Connexion
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Accédez à votre espace abonné et profitez de l&apos;ensemble de nos contenus.
+              Accédez à votre espace abonné et profiter de l&apos;ensemble de nos contenus.
             </p>
           </div>
 
-          {/* Formulaire */}
+          {error && (
+            <div className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/50 text-destructive text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-foreground">
+              <Label
+                htmlFor="email"
+                className="text-xs font-semibold uppercase tracking-wider text-foreground"
+              >
                 Adresse e-mail
               </Label>
               <Input
@@ -102,7 +128,10 @@ export default function LoginPage() {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                <Label
+                  htmlFor="password"
+                  className="text-xs font-semibold uppercase tracking-wider text-foreground"
+                >
                   Mot de passe
                 </Label>
                 <Link
@@ -161,7 +190,6 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Séparateur */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-border" />
@@ -171,18 +199,13 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Lien inscription */}
           <p className="text-center text-sm text-muted-foreground">
             Pas encore abonné ?{" "}
-            <Link
-              href="/register"
-              className="font-semibold text-primary hover:underline"
-            >
+            <Link href="/register" className="font-semibold text-primary hover:underline">
               Créer un compte
             </Link>
           </p>
 
-          {/* Retour au site */}
           <div className="mt-8 pt-6 border-t border-border text-center">
             <Link
               href="/"
@@ -194,5 +217,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

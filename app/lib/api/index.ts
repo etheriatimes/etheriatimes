@@ -37,3 +37,16 @@ export const forgotApi = {
     return data;
   },
 };
+
+export {
+  articlesApi,
+  categoriesApi,
+  commentsApi,
+  bookmarksApi,
+  historyApi,
+  notificationsApi,
+  subscriptionApi,
+  mediaApi,
+  settingsApi,
+  adminUsersApi,
+} from "./client";

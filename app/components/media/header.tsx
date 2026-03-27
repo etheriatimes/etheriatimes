@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, X, Search, User, LogIn, UserPlus, LogOut, Settings } from "lucide-react";
+import { Menu, X, Search, User, LogIn, UserPlus, LogOut, Settings, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
+import { locales, type Locale } from "@/lib/locale";
 
 const categories = [
   { name: "À la une", href: "/" },
@@ -93,6 +94,26 @@ export function Header() {
               <Search className="h-4 w-4" />
               <span className="sr-only">Rechercher</span>
             </Button>
+
+            {/* Locale Switcher */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Globe className="h-4 w-4" />
+                  <span className="sr-only">Changer de pays</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                {locales.map((locale) => (
+                  <DropdownMenuItem key={locale.code} asChild>
+                    <Link href={`/${locale.code}`} className="flex items-center gap-2">
+                      <span>{locale.flag}</span>
+                      <span>{locale.label}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Account Dropdown */}
             <DropdownMenu>

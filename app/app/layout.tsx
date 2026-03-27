@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Source_Serif_4, Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Providers } from "@/context/Providers";
-import "@/styles/globals.css";
+import "../styles/globals.css";
 
 const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
@@ -23,15 +23,15 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/icon-light-32x32.png",
+        url: "/etheriatimes.png",
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/icon-dark-32x32.png",
+        url: "/etheriatimes.png",
         media: "(prefers-color-scheme: dark)",
       },
       {
-        url: "/icon.svg",
+        url: "/etheriatimes.png",
         type: "image/svg+xml",
       },
     ],

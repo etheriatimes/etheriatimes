@@ -39,7 +39,7 @@ const footerContent: Record<Locale, FooterContent> = {
     copyright: "© 2026 The Etheria Times. Tous droits réservés.",
     company: "A Sky Genesis Enterprise company",
   },
-  "be-fr": {
+  be_fr: {
     brand: {
       title: "The Etheria Times",
       description: "Votre fenêtre sur le monde — L'actualité qui compte, décryptée pour vous",
@@ -60,7 +60,7 @@ const footerContent: Record<Locale, FooterContent> = {
     copyright: "© 2026 The Etheria Times. Tous droits réservés.",
     company: "A Sky Genesis Enterprise company",
   },
-  "be-nl": {
+  be_nl: {
     brand: {
       title: "The Etheria Times",
       description: "Je venster op de wereld — Het nieuws dat telt, ontcijferd voor u",
@@ -81,7 +81,7 @@ const footerContent: Record<Locale, FooterContent> = {
     copyright: "© 2026 The Etheria Times. Alle rechten voorbehouden.",
     company: "A Sky Genesis Enterprise company",
   },
-  "ch-fr": {
+  ch_fr: {
     brand: {
       title: "The Etheria Times",
       description: "Votre fenêtre sur le monde — L'actualité qui compte, décryptée pour vous",

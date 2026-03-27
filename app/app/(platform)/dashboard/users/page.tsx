@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Plus,
@@ -12,6 +12,7 @@ import {
   Mail,
   Shield,
   User as UserIcon,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -50,8 +51,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { adminUsersApi } from "@/lib/api";
+import type { User as UserType } from "@/lib/api/types";
 
-interface User {
+interface UserDisplay {
   id: string;
   name: string;
   email: string;
@@ -62,7 +65,7 @@ interface User {
   joinedAt: string;
 }
 
-const mockUsers: User[] = [
+const mockUsers: UserDisplay[] = [
   {
     id: "1",
     name: "Marie Dupont",
@@ -159,11 +162,12 @@ const statusConfig = {
 };
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<UserDisplay[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserDisplay | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
@@ -171,6 +175,49 @@ export default function UsersPage() {
     "author"
   );
   const [newUserPassword, setNewUserPassword] = useState("");
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  async function loadUsers() {
+    setIsLoading(true);
+    try {
+      const response = await adminUsersApi.list({ pageSize: 50 });
+      if (response.success && response.data) {
+        const mapped: UserDisplay[] = response.data.map((u) => ({
+          id: u.id,
+          name: u.name || u.username || "Unknown",
+          email: u.email,
+          avatar: u.avatarUrl,
+          role:
+            (u.role?.toLowerCase() as "admin" | "editor" | "author" | "subscriber") || "subscriber",
+          status: u.active ? "active" : "inactive",
+          articlesCount: 0,
+          joinedAt: u.createdAt || new Date().toISOString(),
+        }));
+        setUsers(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to load users:", error);
+      setUsers(mockUsers);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!userToDelete) return;
+    try {
+      await adminUsersApi.delete(userToDelete.id);
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setSelectedUsers((prev) => prev.filter((id) => id !== userToDelete.id));
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+    }
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  }
 
   const filteredUsers = users.filter(
     (user) =>
@@ -190,7 +237,7 @@ export default function UsersPage() {
     setSelectedUsers((prev) => (prev.includes(id) ? prev.filter((u) => u !== id) : [...prev, id]));
   };
 
-  const handleDelete = (user: User) => {
+  const handleDelete = (user: UserDisplay) => {
     setUserToDelete(user);
     setDeleteDialogOpen(true);
   };
@@ -206,7 +253,7 @@ export default function UsersPage() {
 
   const handleCreate = () => {
     if (!newUserName.trim() || !newUserEmail.trim()) return;
-    const newUser: User = {
+    const newUser: UserDisplay = {
       id: Date.now().toString(),
       name: newUserName,
       email: newUserEmail,

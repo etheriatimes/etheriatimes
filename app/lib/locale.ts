@@ -1,4 +1,4 @@
-export type Locale = "fr" | "be-fr" | "be-nl" | "ch-fr";
+export type Locale = "fr" | "be_fr" | "be_nl" | "ch_fr";
 
 export type LocaleConfig = {
   code: Locale;
@@ -9,9 +9,9 @@ export type LocaleConfig = {
 
 export const locales: LocaleConfig[] = [
   { code: "fr", label: "France", country: "FR", flag: "🇫🇷" },
-  { code: "be-fr", label: "Belgique (FR)", country: "BE", flag: "🇧🇪" },
-  { code: "be-nl", label: "Belgique (NL)", country: "BE", flag: "🇧🇪" },
-  { code: "ch-fr", label: "Suisse (FR)", country: "CH", flag: "🇨🇭" },
+  { code: "be_fr", label: "Belgique (FR)", country: "BE", flag: "🇧🇪" },
+  { code: "be_nl", label: "Belgique (NL)", country: "BE", flag: "🇧🇪" },
+  { code: "ch_fr", label: "Suisse (FR)", country: "CH", flag: "🇨🇭" },
 ];
 
 export const defaultLocale: Locale = "fr";

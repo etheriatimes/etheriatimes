@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff, ArrowRight, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { authApi } from "@/lib/api/client";
 
 const passwordRequirements = [
   { label: "Au moins 8 caractères", test: (p: string) => p.length >= 8 },
@@ -16,11 +18,13 @@ const passwordRequirements = [
 ];
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptNewsletter, setAcceptNewsletter] = useState(false);
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     firstName: "",
@@ -41,9 +45,28 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
+    setError("");
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsLoading(false);
+
+    try {
+      const response = await authApi.register({
+        email: form.email,
+        password: form.password,
+        firstName: form.firstName,
+        lastName: form.lastName,
+      });
+
+      if (response.success) {
+        router.push("/login?registered=true");
+      } else {
+        setError(response.error || "Une erreur est survenue lors de l'inscription");
+      }
+    } catch (err) {
+      setError("Une erreur est survenue. Veuillez réessayer.");
+      console.error("Register error:", err);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

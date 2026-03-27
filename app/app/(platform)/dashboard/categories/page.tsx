@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye, Folder } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye, Folder, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,17 +32,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { categoriesApi } from "@/lib/api";
 
-interface Category {
+interface CategoryDisplay {
   id: string;
   name: string;
   slug: string;
-  description: string;
+  description?: string;
+  color?: string;
   articleCount: number;
-  color: string;
 }
 
-const mockCategories: Category[] = [
+const mockCategories: CategoryDisplay[] = [
   {
     id: "1",
     name: "Politique",
@@ -118,15 +119,85 @@ const mockCategories: Category[] = [
 ];
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  const [categories, setCategories] = useState<CategoryDisplay[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<CategoryDisplay | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState("bg-blue-500");
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  async function loadCategories() {
+    setIsLoading(true);
+    try {
+      const response = await categoriesApi.list();
+      if (response.success && response.data) {
+        const mapped = response.data.map((cat) => ({
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          description: cat.description,
+          color: cat.color,
+          articleCount: 0,
+        }));
+        setCategories(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to load categories:", error);
+      setCategories(mockCategories);
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleCreateCategory() {
+    if (!newCategoryName.trim()) return;
+    try {
+      const response = await categoriesApi.create({
+        name: newCategoryName,
+        description: newCategoryDescription,
+        color: newCategoryColor.replace("bg-", "#"),
+      });
+      if (response.success && response.data) {
+        const newCat: CategoryDisplay = {
+          id: response.data.id,
+          name: response.data.name,
+          slug: response.data.slug,
+          description: response.data.description,
+          color: response.data.color,
+          articleCount: 0,
+        };
+        setCategories((prev) => [newCat, ...prev]);
+      }
+    } catch (error) {
+      console.error("Failed to create category:", error);
+    }
+    setCreateDialogOpen(false);
+    setNewCategoryName("");
+    setNewCategoryDescription("");
+    setNewCategoryColor("bg-blue-500");
+  }
+
+  async function handleDeleteCategory() {
+    if (!categoryToDelete) return;
+    try {
+      await categoriesApi.delete(categoryToDelete.id);
+      setCategories((prev) => prev.filter((c) => c.id !== categoryToDelete.id));
+      setSelectedCategories((prev) => prev.filter((id) => id !== categoryToDelete.id));
+    } catch (error) {
+      console.error("Failed to delete category:", error);
+    }
+    setDeleteDialogOpen(false);
+    setCategoryToDelete(null);
+  }
 
   const colors = [
     "bg-blue-500",
@@ -143,7 +214,7 @@ export default function CategoriesPage() {
   const filteredCategories = categories.filter(
     (cat) =>
       cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cat.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (cat.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   );
 
   const toggleSelectAll = () => {
@@ -160,35 +231,17 @@ export default function CategoriesPage() {
     );
   };
 
-  const handleDelete = (category: Category) => {
+  const handleDelete = (category: CategoryDisplay) => {
     setCategoryToDelete(category);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (categoryToDelete) {
-      setCategories((prev) => prev.filter((c) => c.id !== categoryToDelete.id));
-      setSelectedCategories((prev) => prev.filter((id) => id !== categoryToDelete.id));
-    }
-    setDeleteDialogOpen(false);
-    setCategoryToDelete(null);
+    handleDeleteCategory();
   };
 
   const handleCreate = () => {
-    if (!newCategoryName.trim()) return;
-    const newCategory: Category = {
-      id: Date.now().toString(),
-      name: newCategoryName,
-      slug: newCategoryName.toLowerCase().replace(/\s+/g, "-"),
-      description: newCategoryDescription,
-      articleCount: 0,
-      color: newCategoryColor,
-    };
-    setCategories((prev) => [newCategory, ...prev]);
-    setCreateDialogOpen(false);
-    setNewCategoryName("");
-    setNewCategoryDescription("");
-    setNewCategoryColor("bg-blue-500");
+    handleCreateCategory();
   };
 
   return (

@@ -1,6 +1,6 @@
 .PHONY: help build build-app build-server build-dev build-cloud run-app run-server run-dev run-prod stop clean prune rmi-dev dev-up dev-down dev-logs
 
-APP_NAME := aether-account
+APP_NAME := etheriatimes
 
 help:
 	@echo "Available targets:"
@@ -46,7 +46,7 @@ run-server:
 	docker run --name $(APP_NAME)-server -p 8080:8080 $(APP_NAME)-server:latest
 
 run-dev:
-	docker run --name $(APP_NAME)-dev -p 3001:3001 -p 8080:8080 $(APP_NAME)-dev:latest
+	docker run --name $(APP_NAME)-dev -p 3000:3000 $(APP_NAME)-dev:latest
 
 run-prod:
 	docker run --name $(APP_NAME)-prod -p 3000:3000 $(APP_NAME):latest
@@ -63,8 +63,8 @@ prune:
 	docker system prune -f
 
 rmi-dev:
-	docker stop $(APP_NAME)-dev 2>/dev/null || true
-	docker rm $(APP_NAME)-dev 2>/dev/null || true
+	docker stop $(APP_NAME) 2>/dev/null || true
+	docker rm $(APP_NAME) 2>/dev/null || true
 	docker rmi $(APP_NAME)-dev:latest 2>/dev/null || true
 
 dev-up:
@@ -74,7 +74,7 @@ dev-down:
 	docker compose -f docker-compose.dev.yml down
 
 dev-logs:
-	docker logs -f aether-account-dev
+	docker logs -f $(APP_NAME)
 
 cloud-up:
 	docker compose -f docker-compose.cloud.yml up -d

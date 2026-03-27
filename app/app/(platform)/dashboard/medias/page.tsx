@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Plus,
@@ -15,6 +15,7 @@ import {
   Film,
   FileText,
   File,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -44,8 +45,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { mediaApi } from "@/lib/api";
+import type { Media as MediaType } from "@/lib/api/types";
 
-interface Media {
+interface MediaDisplay {
   id: string;
   name: string;
   type: "image" | "video" | "document";
@@ -56,7 +59,7 @@ interface Media {
   usedIn: number;
 }
 
-const mockMedias: Media[] = [
+const mockMedias: MediaDisplay[] = [
   {
     id: "1",
     name: "reforme-economique.jpg",
@@ -146,15 +149,71 @@ const typeConfig = {
 };
 
 export default function MediasPage() {
-  const [medias, setMedias] = useState<Media[]>(mockMedias);
+  const [medias, setMedias] = useState<MediaDisplay[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMedias, setSelectedMedias] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [mediaToDelete, setMediaToDelete] = useState<Media | null>(null);
+  const [mediaToDelete, setMediaToDelete] = useState<MediaDisplay | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+
+  useEffect(() => {
+    loadMedias();
+  }, []);
+
+  async function loadMedias() {
+    setIsLoading(true);
+    try {
+      const response = await mediaApi.list();
+      if (response.success && response.data) {
+        const mapped: MediaDisplay[] = response.data.map((m) => {
+          const mimeType = m.mimeType || "";
+          let type: "image" | "video" | "document" = "document";
+          if (mimeType.startsWith("image/")) type = "image";
+          else if (mimeType.startsWith("video/")) type = "video";
+
+          return {
+            id: m.id,
+            name: m.originalName || m.filename,
+            type,
+            url: m.url || "",
+            size: formatFileSize(m.size),
+            dimensions: m.width && m.height ? `${m.width}x${m.height}` : undefined,
+            uploadedAt: m.createdAt || new Date().toISOString(),
+            usedIn: 0,
+          };
+        });
+        setMedias(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to load medias:", error);
+      setMedias(mockMedias);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  async function handleDeleteMedia() {
+    if (!mediaToDelete) return;
+    try {
+      await mediaApi.delete(mediaToDelete.id);
+      setMedias((prev) => prev.filter((m) => m.id !== mediaToDelete.id));
+      setSelectedMedias((prev) => prev.filter((id) => id !== mediaToDelete.id));
+    } catch (error) {
+      console.error("Failed to delete media:", error);
+    }
+    setDeleteDialogOpen(false);
+    setMediaToDelete(null);
+  }
 
   const filteredMedias = medias.filter((media) =>
     media.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -172,7 +231,7 @@ export default function MediasPage() {
     setSelectedMedias((prev) => (prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]));
   };
 
-  const handleDelete = (media: Media) => {
+  const handleDelete = (media: MediaDisplay) => {
     setMediaToDelete(media);
     setDeleteDialogOpen(true);
   };
@@ -196,7 +255,7 @@ export default function MediasPage() {
           setIsUploading(false);
           setUploadDialogOpen(false);
           setUploadProgress(0);
-          const newMedia: Media = {
+          const newMedia: MediaDisplay = {
             id: Date.now().toString(),
             name: "nouveau-media.jpg",
             type: "image",

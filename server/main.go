@@ -7,9 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/skygenesisenterprise/aether-account/server/src/config"
-	"github.com/skygenesisenterprise/aether-account/server/src/routes"
-	"github.com/skygenesisenterprise/aether-account/server/src/services"
+	"github.com/etheriatimes/website/server/src/config"
+	"github.com/etheriatimes/website/server/src/routes"
+	"github.com/etheriatimes/website/server/src/services"
 )
 
 func displayBanner() {
@@ -23,7 +23,7 @@ func displayBanner() {
 	fmt.Printf("\033[0;37m")
 	fmt.Printf("\n")
 	fmt.Printf("\033[1;33m    ╔══════════════════════════════════════════════════════════════╗\n")
-	fmt.Printf("\033[1;33m    ║                    AETHER Account                            ║\n")
+	fmt.Printf("\033[1;33m    ║                    The Etheria Times                         ║\n")
 	fmt.Printf("\033[1;33m    ║               Enterprise Account Management                  ║\n")
 	fmt.Printf("\033[1;33m    ║                   Version 1.0.0-alpha                        ║\n")
 	fmt.Printf("\033[1;33m    ╚══════════════════════════════════════════════════════════════╝\n")
