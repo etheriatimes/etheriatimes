@@ -9,9 +9,25 @@ import {
   Clock,
   ArrowUpRight,
   MoreHorizontal,
+  Plus,
+  Bell,
+  Share2,
+  Mail,
+  DollarSign,
+  BarChart3,
+  Globe,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { StatsCard } from "@/components/admin/stats-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +42,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Données pour les graphiques
 const viewsData = [
   { date: "Lun", views: 12400, visitors: 8200 },
   { date: "Mar", views: 14200, visitors: 9100 },
@@ -37,12 +52,19 @@ const viewsData = [
   { date: "Dim", views: 15600, visitors: 10100 },
 ];
 
+const socialData = [
+  { platform: "Twitter", followers: 45230, growth: 5.2, color: "#000000" },
+  { platform: "Facebook", followers: 125400, growth: 2.1, color: "#1877F2" },
+  { platform: "Instagram", followers: 89200, growth: 8.4, color: "#E1306C" },
+  { platform: "LinkedIn", followers: 15600, growth: 12.3, color: "#0A66C2" },
+];
+
 const categoryData = [
-  { category: "Politique", articles: 45, color: "var(--chart-1)" },
-  { category: "Économie", articles: 38, color: "var(--chart-2)" },
-  { category: "International", articles: 32, color: "var(--chart-3)" },
-  { category: "Culture", articles: 28, color: "var(--chart-4)" },
-  { category: "Sport", articles: 24, color: "var(--chart-5)" },
+  { category: "Politique", articles: 45, color: "#8B5CF6" },
+  { category: "Économie", articles: 38, color: "#06B6D4" },
+  { category: "International", articles: 32, color: "#10B981" },
+  { category: "Culture", articles: 28, color: "#F59E0B" },
+  { category: "Sport", articles: 24, color: "#EF4444" },
 ];
 
 const recentArticles = [
@@ -51,7 +73,6 @@ const recentArticles = [
     title: "Les nouvelles mesures économiques annoncées par le gouvernement",
     category: "Économie",
     author: "Marie Dupont",
-    authorAvatar: "",
     status: "published",
     views: 3420,
     date: "Il y a 2h",
@@ -61,7 +82,6 @@ const recentArticles = [
     title: "Sommet international sur le climat : les enjeux majeurs",
     category: "International",
     author: "Jean Martin",
-    authorAvatar: "",
     status: "published",
     views: 2890,
     date: "Il y a 4h",
@@ -71,7 +91,6 @@ const recentArticles = [
     title: "Réforme de l'éducation : ce qui va changer",
     category: "Politique",
     author: "Sophie Bernard",
-    authorAvatar: "",
     status: "draft",
     views: 0,
     date: "Il y a 5h",
@@ -81,7 +100,6 @@ const recentArticles = [
     title: "Le nouveau festival de musique fait sensation",
     category: "Culture",
     author: "Lucas Petit",
-    authorAvatar: "",
     status: "review",
     views: 0,
     date: "Il y a 6h",
@@ -91,7 +109,6 @@ const recentArticles = [
     title: "Victoire historique de l'équipe nationale",
     category: "Sport",
     author: "Emma Leroy",
-    authorAvatar: "",
     status: "published",
     views: 5670,
     date: "Il y a 8h",
@@ -105,22 +122,63 @@ const topAuthors = [
   { name: "Lucas Petit", articles: 15, views: 28400, avatar: "" },
 ];
 
+const recentActivity = [
+  {
+    type: "article",
+    user: "Marie Dupont",
+    action: "a publié",
+    target: "Les nouvelles mesures économiques",
+    time: "Il y a 2h",
+    icon: FileText,
+  },
+  {
+    type: "comment",
+    user: "Jean Martin",
+    action: "a commenté",
+    target: "Sommet international sur le climat",
+    time: "Il y a 3h",
+    icon: MessageSquare,
+  },
+  {
+    type: "user",
+    user: "Sophie Bernard",
+    action: "s'est inscrit",
+    target: "",
+    time: "Il y a 4h",
+    icon: Users,
+  },
+  {
+    type: "social",
+    user: "System",
+    action: "a publié sur",
+    target: "Twitter",
+    time: "Il y a 5h",
+    icon: Share2,
+  },
+  {
+    type: "newsletter",
+    user: "Lucas Petit",
+    action: "a envoyé",
+    target: "Newsletter hebdomadaire",
+    time: "Il y a 6h",
+    icon: Mail,
+  },
+];
+
+const quickActions = [
+  { label: "Nouvel article", href: "/dashboard/articles/new", icon: Plus, color: "bg-blue-500" },
+  { label: "Voir le site", href: "/", icon: Globe, color: "bg-green-500" },
+  { label: "Notifications", href: "/dashboard/notifications", icon: Bell, color: "bg-orange-500" },
+  { label: "Statistiques", href: "/dashboard/analytics", icon: BarChart3, color: "bg-purple-500" },
+];
+
 const viewsChartConfig = {
-  views: {
-    label: "Vues",
-    color: "oklch(0.5 0.2 25)",
-  },
-  visitors: {
-    label: "Visiteurs",
-    color: "oklch(0.7 0.15 250)",
-  },
+  views: { label: "Vues", color: "oklch(0.5 0.2 25)" },
+  visitors: { label: "Visiteurs", color: "oklch(0.7 0.15 250)" },
 };
 
 const categoryChartConfig = {
-  articles: {
-    label: "Articles",
-    color: "oklch(0.5 0.2 25)",
-  },
+  articles: { label: "Articles", color: "oklch(0.5 0.2 25)" },
 };
 
 function getStatusBadge(status: string) {
@@ -144,6 +202,12 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+function formatNumber(num: number) {
+  if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  return num.toString();
+}
+
 export default function DashboardPage() {
   return (
     <div className="p-6 space-y-6">
@@ -155,7 +219,26 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {quickActions.map((action) => (
+          <Button
+            key={action.label}
+            variant="outline"
+            className="h-auto py-4 flex flex-col items-center gap-2"
+            asChild
+          >
+            <Link href={action.href}>
+              <div className={`p-2 rounded-lg ${action.color}`}>
+                <action.icon className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-sm">{action.label}</span>
+            </Link>
+          </Button>
+        ))}
+      </div>
+
+      {/* Stats Cards Row 1 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Articles publiés"
@@ -188,6 +271,42 @@ export default function DashboardPage() {
           changeType="negative"
           description="vs mois dernier"
           icon={MessageSquare}
+        />
+      </div>
+
+      {/* Stats Cards Row 2 - Social & Revenue */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatsCard
+          title="Abonnés sociaux"
+          value="275K"
+          change="+7.2%"
+          changeType="positive"
+          description="vs mois dernier"
+          icon={Share2}
+        />
+        <StatsCard
+          title="Newsletter"
+          value="5,420"
+          change="+8.5%"
+          changeType="positive"
+          description="vs mois dernier"
+          icon={Mail}
+        />
+        <StatsCard
+          title="Revenus pub"
+          value="€12,450"
+          change="+15%"
+          changeType="positive"
+          description="vs mois dernier"
+          icon={DollarSign}
+        />
+        <StatsCard
+          title="Taux d'engagement"
+          value="4.2%"
+          change="+0.8%"
+          changeType="positive"
+          description="vs mois dernier"
+          icon={Activity}
         />
       </div>
 
@@ -259,38 +378,115 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Categories Chart */}
+        {/* Social Overview */}
+        <Card className="lg:col-span-3">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Réseaux sociaux</CardTitle>
+                <CardDescription>Abonnés par plateforme</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/dashboard/social-analytics" className="gap-1">
+                  Voir tout
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {socialData.map((social) => (
+                <div key={social.platform} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: social.color }}
+                    />
+                    <span className="text-sm font-medium">{social.platform}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm">{formatNumber(social.followers)}</span>
+                    <Badge variant="outline" className="text-xs text-green-600">
+                      <ArrowUpRight className="h-3 w-3 mr-1" />+{social.growth}%
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Second Row Charts */}
+      <div className="grid gap-4 lg:grid-cols-7">
+        {/* Categories */}
         <Card className="lg:col-span-3">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Articles par catégorie</CardTitle>
             <CardDescription>Répartition ce mois</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={categoryChartConfig} className="h-60 w-full">
+            <ChartContainer config={categoryChartConfig} className="h-52 w-full">
               <BarChart
                 data={categoryData}
                 layout="vertical"
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
-                <XAxis
-                  type="number"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-                />
+                <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
                 <YAxis
                   type="category"
                   dataKey="category"
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                  tick={{ fontSize: 12 }}
                   width={80}
                 />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="articles" fill="var(--color-articles)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="articles" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity */}
+        <Card className="lg:col-span-4">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Activité récente</CardTitle>
+                <CardDescription>Dernières actions sur la plateforme</CardDescription>
+              </div>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border">
+              {recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-center gap-3 px-6 py-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                    <activity.icon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">
+                      <span className="font-medium">{activity.user}</span>{" "}
+                      <span className="text-muted-foreground">{activity.action}</span>
+                      {activity.target && (
+                        <>
+                          {" "}
+                          <span className="font-medium">{activity.target}</span>
+                        </>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {activity.time}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -328,7 +524,6 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex items-center gap-1.5">
                         <Avatar className="h-4 w-4">
-                          <AvatarImage src={article.authorAvatar} />
                           <AvatarFallback className="text-[8px] bg-muted">
                             {getInitials(article.author)}
                           </AvatarFallback>
@@ -387,16 +582,13 @@ export default function DashboardPage() {
                 <div key={author.name} className="flex items-center gap-3 px-6 py-3">
                   <span className="text-sm font-medium text-muted-foreground w-4">{index + 1}</span>
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={author.avatar} />
                     <AvatarFallback className="text-xs bg-primary/10 text-primary">
                       {getInitials(author.name)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{author.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {author.articles} articles • {(author.views / 1000).toFixed(1)}k vues
-                    </p>
+                    <p className="text-xs text-muted-foreground">{author.views} vues</p>
                   </div>
                 </div>
               ))}
