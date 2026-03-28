@@ -17,14 +17,14 @@ RUN pnpm install --frozen-lockfile
 # (seul COPY nécessaire après COPY . . car le chemin cible diffère)
 COPY server/prisma/ ./prisma/
 
-RUN npx prisma generate --schema=./prisma/schema.prisma
+RUN npx prisma generate --config=./prisma.config.ts
 
 RUN NODE_ENV=production pnpm --filter @website/app build
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage 2 — Go build
 # ══════════════════════════════════════════════════════════════════════════════
-FROM golang:1.24-alpine AS go-builder
+FROM golang:1.25-alpine AS go-builder
 
 RUN apk add --no-cache gcc musl-dev
 
@@ -85,6 +85,7 @@ COPY --from=node-builder /app/app/public           ./public
 COPY --from=node-builder /app/node_modules/prisma  ./node_modules/prisma
 COPY --from=node-builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=node-builder /app/prisma/              ./prisma/
+COPY --from=node-builder /app/prisma.config.ts      ./prisma.config.ts
 
 COPY --from=go-builder /etheriatimes-api ./server/etheriatimes-api
 
