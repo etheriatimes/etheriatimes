@@ -73,8 +73,8 @@ EOF
 WORKDIR /app
 
 COPY --from=node-builder /app/app/.next/standalone ./
-COPY --from=node-builder /app/app/.next/static     ./.next/static
-COPY --from=node-builder /app/app/public           ./public
+COPY --from=node-builder /app/app/.next/static ./.next/static
+COPY --from=node-builder /app/app/public ./public
 
 COPY --from=node-builder /app/node_modules ./node_modules
 COPY --from=node-builder /app/prisma/      ./prisma/
