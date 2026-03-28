@@ -1,11 +1,21 @@
 #!/bin/sh
 set -e
 
-# ── Chemins absolus PG16 (su réinitialise le PATH) ───────────────────────────
-PG_BIN="/usr/lib/postgresql16/bin"
+PG_BIN=""
 PG_DATA="/var/lib/postgresql/data"
-PG_CONF="/etc/postgresql/postgresql.conf"
+PG_CONF="/etc/postgresql/16/postgresql.conf"
 PG_LOG="/var/lib/postgresql/logfile"
+
+if [ -x /usr/bin/initdb ]; then
+    PG_BIN="/usr/bin"
+elif [ -x /usr/lib/postgresql/16/bin/initdb ]; then
+    PG_BIN="/usr/lib/postgresql/16/bin"
+elif [ -x /usr/lib/postgresql16/bin/initdb ]; then
+    PG_BIN="/usr/lib/postgresql16/bin"
+else
+    echo "[!] PostgreSQL initdb not found in known locations"
+    exit 1
+fi
 
 # ── PostgreSQL ────────────────────────────────────────────────────────────────
 

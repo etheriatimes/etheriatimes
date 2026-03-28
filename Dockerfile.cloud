@@ -58,13 +58,13 @@ RUN mkdir -p /var/lib/postgresql/data /run/postgresql /var/log/postgresql && \
       /var/log/postgresql && \
     chmod 700 /var/lib/postgresql/data
 
-RUN mkdir -p /etc/postgresql
-COPY <<'EOF' /etc/postgresql/pg_hba.conf
+RUN mkdir -p /etc/postgresql/16
+COPY <<'EOF' /etc/postgresql/16/pg_hba.conf
 local   all       all                   trust
 host    all       all   127.0.0.1/32    scram-sha-256
 EOF
 
-COPY <<'EOF' /etc/postgresql/postgresql.conf
+COPY <<'EOF' /etc/postgresql/16/postgresql.conf
 listen_addresses = '127.0.0.1'
 port = 5432
 max_connections = 50
