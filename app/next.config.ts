@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
 
   ...(isProduction && {
     output: "standalone",
+    assetPrefix: process.env.ASSET_PREFIX || undefined,
   }),
 
   basePath: process.env.BASE_PATH || "",

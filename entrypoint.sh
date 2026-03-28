@@ -69,7 +69,7 @@ API_PID=$!
 
 echo "[*] Starting Next.js on :3000..."
 cd /app
-PORT=3000 node server.js &
+PORT=3000 HOSTNAME=0.0.0.0 node server.js 2>&1 &
 NEXT_PID=$!
 
 echo "[+] All services running — PG | API($API_PID) | Next($NEXT_PID)"
