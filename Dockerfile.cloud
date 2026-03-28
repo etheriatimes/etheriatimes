@@ -11,13 +11,13 @@ RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 # Les COPYs individuels suivants étaient redondants et incorrects
 COPY . .
 
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Prisma : repositionner le schema depuis server/prisma/ vers ./prisma/
 # (seul COPY nécessaire après COPY . . car le chemin cible diffère)
 COPY server/prisma/ ./prisma/
 
-RUN pnpm exec prisma generate --config=./prisma.config.ts
+RUN ./node_modules/.bin/prisma generate --config=./prisma.config.ts
 
 RUN NODE_ENV=production pnpm --filter @website/app build
 
