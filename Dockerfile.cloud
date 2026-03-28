@@ -17,9 +17,6 @@ RUN ./node_modules/.bin/prisma generate --config=./prisma.config.ts
 
 RUN NODE_ENV=production pnpm --filter @website/app build
 
-# Create production-only node_modules (excludes dev deps like @prisma/dev)
-RUN pnpm install --frozen-lockfile --ignore-scripts --only=production
-
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage 2 — Go build
 # ══════════════════════════════════════════════════════════════════════════════
@@ -79,9 +76,12 @@ COPY --from=node-builder /app/app/.next/standalone ./
 COPY --from=node-builder /app/app/.next/static     ./.next/static
 COPY --from=node-builder /app/app/public           ./public
 
-COPY --from=node-builder /app/node_modules ./node_modules
 COPY --from=node-builder /app/prisma/      ./prisma/
 COPY --from=node-builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=node-builder /app/pnpm-lock.yaml ./
+
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate && \
+    pnpm install --frozen-lockfile --ignore-scripts --only=production
 
 COPY --from=go-builder /etheriatimes-api ./server/etheriatimes-api
 
