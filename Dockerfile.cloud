@@ -7,19 +7,18 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
-# COPY . . suffit — copie le repo entier (root pnpm-lock.yaml inclus)
-# Les COPYs individuels suivants étaient redondants et incorrects
 COPY . .
 
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
-# Prisma : repositionner le schema depuis server/prisma/ vers ./prisma/
-# (seul COPY nécessaire après COPY . . car le chemin cible diffère)
 COPY server/prisma/ ./prisma/
 
 RUN ./node_modules/.bin/prisma generate --config=./prisma.config.ts
 
 RUN NODE_ENV=production pnpm --filter @website/app build
+
+# Create production-only node_modules (excludes dev deps like @prisma/dev)
+RUN pnpm install --frozen-lockfile --ignore-scripts --only=production
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage 2 — Go build
@@ -76,12 +75,10 @@ EOF
 
 WORKDIR /app
 
-# ⚠️ Chemin corrigé : workspace build → output dans app/.next/ et non .next/
 COPY --from=node-builder /app/app/.next/standalone ./
 COPY --from=node-builder /app/app/.next/static     ./.next/static
 COPY --from=node-builder /app/app/public           ./public
 
-# Copy entire node_modules (pnpm symlinks require full .pnpm store)
 COPY --from=node-builder /app/node_modules ./node_modules
 COPY --from=node-builder /app/prisma/      ./prisma/
 COPY --from=node-builder /app/prisma.config.ts ./prisma.config.ts
