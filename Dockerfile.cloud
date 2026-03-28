@@ -11,7 +11,7 @@ RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 # Les COPYs individuels suivants étaient redondants et incorrects
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --prod
 
 # Prisma : repositionner le schema depuis server/prisma/ vers ./prisma/
 # (seul COPY nécessaire après COPY . . car le chemin cible diffère)
