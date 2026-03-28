@@ -81,11 +81,10 @@ COPY --from=node-builder /app/app/.next/standalone ./
 COPY --from=node-builder /app/app/.next/static     ./.next/static
 COPY --from=node-builder /app/app/public           ./public
 
-# Prisma CLI + client + migrations
-COPY --from=node-builder /app/node_modules/prisma  ./node_modules/prisma
-COPY --from=node-builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=node-builder /app/prisma/              ./prisma/
-COPY --from=node-builder /app/prisma.config.ts      ./prisma.config.ts
+# Copy entire node_modules (pnpm symlinks require full .pnpm store)
+COPY --from=node-builder /app/node_modules ./node_modules
+COPY --from=node-builder /app/prisma/      ./prisma/
+COPY --from=node-builder /app/prisma.config.ts ./prisma.config.ts
 
 COPY --from=go-builder /etheriatimes-api ./server/etheriatimes-api
 

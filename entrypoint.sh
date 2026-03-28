@@ -49,9 +49,9 @@ END
 \$\$;
 SQL"
 
-# Create database (must be outside transaction/DO block)
+# Create database
 su -s /bin/sh postgres -c "$PG_BIN/psql -v ON_ERROR_STOP=0 -c \
-  \"SELECT 'CREATE DATABASE etheria_account OWNER aether' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'etheria_account')\" | $PG_BIN/psql -v ON_ERROR_STOP=0"
+  \"CREATE DATABASE etheria_account OWNER aether\"" 2>/dev/null || true
 
 # ── Migrations Prisma ─────────────────────────────────────────────────────────
 
