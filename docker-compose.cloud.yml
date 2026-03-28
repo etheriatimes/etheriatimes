@@ -7,7 +7,7 @@ services:
     container_name: etheriatimes
     restart: unless-stopped
 
-    ports:
+    expose:
       - "3000:3000"
       # 8080 et 5432 restent internes au container — pas exposés à l'hôte
 

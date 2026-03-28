@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   FileText,
   Eye,
@@ -17,23 +18,16 @@ import {
   BarChart3,
   Globe,
   Activity,
+  Calendar,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { StatsCard } from "@/components/admin/stats-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import {
   DropdownMenu,
@@ -41,6 +35,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const viewsData = [
   { date: "Lun", views: 12400, visitors: 8200 },
@@ -209,18 +210,34 @@ function formatNumber(num: number) {
 }
 
 export default function DashboardPage() {
+  const [timeRange, setTimeRange] = useState("14d");
+
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
-        <p className="text-muted-foreground">
-          Bienvenue sur la console d&apos;administration de The Etheria Times
-        </p>
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Tableau de bord</h1>
+          <p className="text-sm text-muted-foreground">
+            Bienvenue sur la console d&apos;administration de The Etheria Times
+          </p>
+        </div>
+        <Select value={timeRange} onValueChange={setTimeRange}>
+          <SelectTrigger className="w-40">
+            <Calendar className="mr-2 h-4 w-4" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7d">7 derniers jours</SelectItem>
+            <SelectItem value="14d">14 derniers jours</SelectItem>
+            <SelectItem value="30d">30 derniers jours</SelectItem>
+            <SelectItem value="90d">3 derniers mois</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {quickActions.map((action) => (
           <Button
             key={action.label}
@@ -245,7 +262,7 @@ export default function DashboardPage() {
           value="1,247"
           change="+12%"
           changeType="positive"
-          description="vs mois dernier"
+          description="vs période précédente"
           icon={FileText}
         />
         <StatsCard
@@ -253,7 +270,7 @@ export default function DashboardPage() {
           value="2.4M"
           change="+18%"
           changeType="positive"
-          description="vs mois dernier"
+          description="vs période précédente"
           icon={Eye}
         />
         <StatsCard
@@ -261,7 +278,7 @@ export default function DashboardPage() {
           value="48,293"
           change="+5.2%"
           changeType="positive"
-          description="vs mois dernier"
+          description="vs période précédente"
           icon={Users}
         />
         <StatsCard
@@ -269,7 +286,7 @@ export default function DashboardPage() {
           value="12,847"
           change="-3%"
           changeType="negative"
-          description="vs mois dernier"
+          description="vs période précédente"
           icon={MessageSquare}
         />
       </div>
@@ -281,7 +298,7 @@ export default function DashboardPage() {
           value="275K"
           change="+7.2%"
           changeType="positive"
-          description="vs mois dernier"
+          description="vs période précédente"
           icon={Share2}
         />
         <StatsCard
@@ -289,7 +306,7 @@ export default function DashboardPage() {
           value="5,420"
           change="+8.5%"
           changeType="positive"
-          description="vs mois dernier"
+          description="vs période précédente"
           icon={Mail}
         />
         <StatsCard
@@ -297,7 +314,7 @@ export default function DashboardPage() {
           value="€12,450"
           change="+15%"
           changeType="positive"
-          description="vs mois dernier"
+          description="vs période précédente"
           icon={DollarSign}
         />
         <StatsCard
@@ -305,13 +322,13 @@ export default function DashboardPage() {
           value="4.2%"
           change="+0.8%"
           changeType="positive"
-          description="vs mois dernier"
+          description="vs période précédente"
           icon={Activity}
         />
       </div>
 
       {/* Charts Row */}
-      <div className="grid gap-4 lg:grid-cols-7">
+      <div className="grid gap-6 lg:grid-cols-7">
         {/* Views Chart */}
         <Card className="lg:col-span-4">
           <CardHeader className="pb-2">
@@ -333,7 +350,7 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={viewsChartConfig} className="h-60 w-full">
+            <ChartContainer config={viewsChartConfig} className="h-70 w-full">
               <AreaChart data={viewsData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="fillViews" x1="0" y1="0" x2="0" y2="1">
@@ -419,7 +436,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Second Row Charts */}
-      <div className="grid gap-4 lg:grid-cols-7">
+      <div className="grid gap-6 lg:grid-cols-7">
         {/* Categories */}
         <Card className="lg:col-span-3">
           <CardHeader className="pb-2">
@@ -427,7 +444,7 @@ export default function DashboardPage() {
             <CardDescription>Répartition ce mois</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={categoryChartConfig} className="h-52 w-full">
+            <ChartContainer config={categoryChartConfig} className="h-62.5 w-full">
               <BarChart
                 data={categoryData}
                 layout="vertical"
@@ -492,7 +509,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Articles & Top Authors */}
-      <div className="grid gap-4 lg:grid-cols-7">
+      <div className="grid gap-6 lg:grid-cols-7">
         {/* Recent Articles */}
         <Card className="lg:col-span-5">
           <CardHeader className="pb-3">
