@@ -80,10 +80,6 @@ COPY --from=node-builder /app/node_modules ./node_modules
 COPY --from=node-builder /app/prisma/      ./prisma/
 COPY --from=node-builder /app/prisma.config.ts ./prisma.config.ts
 
-RUN rm -rf ./node_modules/.pnpm/@prisma+dev@* ./node_modules/@prisma/dev ./node_modules/.pnpm/zeptomatch@* && \
-    mkdir -p ./node_modules/@prisma/dev && \
-    echo 'module.exports = { dev: () => {} };' > ./node_modules/@prisma/dev/index.cjs
-
 COPY --from=go-builder /etheriatimes-api ./server/etheriatimes-api
 
 COPY entrypoint.sh /entrypoint.sh

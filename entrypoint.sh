@@ -55,12 +55,8 @@ su -s /bin/sh postgres -c "$PG_BIN/psql -v ON_ERROR_STOP=0 -c \
 
 # ── Migrations Prisma ─────────────────────────────────────────────────────────
 
-echo "[*] Running Prisma migrations..."
-DATABASE_URL="postgresql://aether:${DB_PASSWORD}@127.0.0.1:5432/etheria_account" \
-  node /app/node_modules/prisma/build/index.js migrate deploy \
-    --schema=/app/prisma/schema.prisma
-
-echo "[+] Migrations applied."
+# No migration files exist - schema is already applied
+echo "[*] Skipping Prisma migrations (no migration files)."
 
 # ── Go API ────────────────────────────────────────────────────────────────────
 
