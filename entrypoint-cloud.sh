@@ -11,10 +11,9 @@ echo "  - DB:       db:5432 (via Docker network)"
 echo "=========================================="
 echo ""
 
-echo "[*] Fixing pnpm symlink..."
+echo "[*] Fixing pnpm..."
 rm -f /usr/local/bin/pnpm
-corepack enable
-corepack prepare pnpm@9.15.4 --activate
+npm install -g pnpm@9.15.4
 
 echo "[*] Waiting for database to be ready..."
 MAX_RETRIES=30
