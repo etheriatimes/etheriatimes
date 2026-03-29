@@ -54,8 +54,8 @@ else
 fi
 
 echo "[*] Starting Next.js on :3000..."
-cd /app/app
-pnpm next start -p 3000 -H 0.0.0.0 &
+cd /app
+HOST=0.0.0.0 PORT=3000 node server.js &
 NEXT_PID=$!
 
 echo "[*] Starting Go API server on :8080..."
