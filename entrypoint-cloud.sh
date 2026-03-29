@@ -4,7 +4,7 @@ set -e
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/go/bin:/go/bin:/root/go/bin:/root/.local/share/corepack"
 
 echo "=========================================="
-echo "  Etheria Times - Services Starting"
+echo "  Etheria Times - Production Services"
 echo "  - Frontend: http://localhost:3000"
 echo "  - API:      http://localhost:8080"
 echo "  - DB:       db:5432 (via Docker network)"
@@ -54,17 +54,17 @@ else
     echo "[!] Database not available, running in mock mode"
 fi
 
-echo "[*] Starting Next.js on :3000..."
+echo "[*] Building Next.js application..."
 cd /app/app
-pnpm next dev -p 3000 -H 0.0.0.0 &
-NEXT_PID=$!
+pnpm next build
 
-echo "[*] Waiting for Next.js to be ready..."
-sleep 5
+echo "[*] Starting Next.js on :3000..."
+pnpm next start -p 3000 -H 0.0.0.0 &
+NEXT_PID=$!
 
 echo "[*] Starting Go API server on :8080..."
 cd /app
-air -c /app/.air.toml &
+./server &
 API_PID=$!
 
 echo "[*] All services started! Press Ctrl+C to stop"

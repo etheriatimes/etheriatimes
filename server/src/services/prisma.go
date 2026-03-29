@@ -9,6 +9,7 @@ import (
 	"github.com/etheriatimes/website/server/src/config"
 	"github.com/etheriatimes/website/server/src/models"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type PrismaService struct {
@@ -42,7 +43,32 @@ func NewPrismaService(cfg *config.Config) (*PrismaService, error) {
 		DB: db,
 	}
 
+	if err := prismaInstance.initTables(); err != nil {
+		fmt.Printf("\033[1;33m[!] Warning: Failed to initialize tables: %v\033[0m\n", err)
+	}
+
 	return prismaInstance, nil
+}
+
+func (p *PrismaService) initTables() error {
+	schema := `
+	CREATE TABLE IF NOT EXISTS users (
+		id VARCHAR(255) PRIMARY KEY,
+		email VARCHAR(255) UNIQUE NOT NULL,
+		password_hash VARCHAR(255),
+		first_name VARCHAR(255),
+		last_name VARCHAR(255),
+		phone VARCHAR(50),
+		avatar_url TEXT,
+		role VARCHAR(50) DEFAULT 'USER',
+		is_active BOOLEAN DEFAULT true,
+		email_verified TIMESTAMP,
+		created_at TIMESTAMP DEFAULT NOW(),
+		updated_at TIMESTAMP DEFAULT NOW()
+	);
+	`
+	_, err := p.DB.Exec(schema)
+	return err
 }
 
 func GetPrismaService() *PrismaService {
@@ -291,11 +317,11 @@ func (p *PrismaService) ListUsers(search string, page, pageSize int) ([]models.E
 func (p *PrismaService) GetUser(id string) (*models.EtheriaUser, error) {
 	ctx := context.Background()
 
-	query := "SELECT id, email, COALESCE(first_name, ''), COALESCE(last_name, ''), COALESCE(phone, ''), COALESCE(avatar_url, ''), role, is_active, email_verified, created_at, updated_at FROM users WHERE id = $1"
+	query := "SELECT id, email, COALESCE(first_name, ''), COALESCE(last_name, ''), COALESCE(phone, ''), COALESCE(avatar_url, ''), COALESCE(password_hash, ''), role, is_active, email_verified, created_at, updated_at FROM users WHERE id = $1"
 
 	var u models.EtheriaUser
 	err := p.DB.QueryRowContext(ctx, query, id).Scan(
-		&u.ID, &u.Email, &u.FirstName, &u.LastName, &u.Phone, &u.AvatarUrl, &u.Role,
+		&u.ID, &u.Email, &u.FirstName, &u.LastName, &u.Phone, &u.AvatarUrl, &u.Password,
 		&u.IsActive, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
@@ -305,7 +331,24 @@ func (p *PrismaService) GetUser(id string) (*models.EtheriaUser, error) {
 	return &u, nil
 }
 
-func (p *PrismaService) CreateUser(email, firstName, lastName, role string) (*models.EtheriaUser, error) {
+func (p *PrismaService) GetUserByEmail(email string) (*models.EtheriaUser, error) {
+	ctx := context.Background()
+
+	query := "SELECT id, email, COALESCE(first_name, ''), COALESCE(last_name, ''), COALESCE(phone, ''), COALESCE(avatar_url, ''), COALESCE(password_hash, ''), role, is_active, email_verified, created_at, updated_at FROM users WHERE email = $1"
+
+	var u models.EtheriaUser
+	err := p.DB.QueryRowContext(ctx, query, email).Scan(
+		&u.ID, &u.Email, &u.FirstName, &u.LastName, &u.Phone, &u.AvatarUrl, &u.Password,
+		&u.IsActive, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
+	}
+
+	return &u, nil
+}
+
+func (p *PrismaService) CreateUser(email, firstName, lastName, role, password string) (*models.EtheriaUser, error) {
 	ctx := context.Background()
 
 	id := fmt.Sprintf("user_%d", time.Now().UnixNano())
@@ -317,13 +360,18 @@ func (p *PrismaService) CreateUser(email, firstName, lastName, role string) (*mo
 		defaultRole = models.RoleEditor
 	}
 
-	query := `INSERT INTO users (id, email, first_name, last_name, role, is_active, created_at, updated_at)
-			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	query := `INSERT INTO users (id, email, first_name, last_name, role, password_hash, is_active, created_at, updated_at)
+			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			  RETURNING id, email, COALESCE(first_name, ''), COALESCE(last_name, ''), COALESCE(phone, ''), COALESCE(avatar_url, ''), role, is_active, email_verified, created_at, updated_at`
 
 	var u models.EtheriaUser
-	err := p.DB.QueryRowContext(ctx, query,
-		id, email, firstName, lastName, defaultRole, true, now, now,
+	err = p.DB.QueryRowContext(ctx, query,
+		id, email, firstName, lastName, defaultRole, string(hashedPassword), true, now, now,
 	).Scan(
 		&u.ID, &u.Email, &u.FirstName, &u.LastName, &u.Phone, &u.AvatarUrl, &u.Role,
 		&u.IsActive, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt,

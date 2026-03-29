@@ -103,11 +103,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authApi.storeUser(userData);
       setUser(userData);
 
-      console.log("[AuthContext] Login successful, user set");
+      console.log("[AuthContext] Login successful, user set, redirecting...");
 
       const isAdmin = email.toLowerCase().endsWith("@etheriatimes.com");
-      router.push(isAdmin ? "/dashboard" : "/user");
+      const redirectTo = isAdmin ? "/dashboard" : "/user";
+      console.log("[AuthContext] Redirecting to:", redirectTo);
+      router.push(redirectTo);
     } catch (error) {
+      console.error("[AuthContext] Login error:", error);
       throw error;
     } finally {
       setIsLoading(false);

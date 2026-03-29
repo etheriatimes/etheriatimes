@@ -42,7 +42,8 @@ RUN apk add --no-cache \
     git \
     wget \
     build-base \
-    libc6-compat
+    libc6-compat \
+    docker-cli
 
 # ── Go (requis par Air pour recompiler à chaud) ───────────────────────────────
 RUN ARCH=$(uname -m) && \

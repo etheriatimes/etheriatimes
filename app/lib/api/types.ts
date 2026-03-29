@@ -468,10 +468,24 @@ export interface SettingsResponse extends ApiResponse {
   data?: SystemSettings;
 }
 export interface EtheriaUserResponse extends ApiResponse {}
-export interface EtheriaUserListResponse extends ApiResponse {
-  data?: User[];
+export interface EtheriaUserListResponse {
+  success?: boolean;
+  data?: AdminUser[];
   total?: number;
   page?: number;
   pageSize?: number;
   totalPages?: number;
+  error?: string;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  role?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }

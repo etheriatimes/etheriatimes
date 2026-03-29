@@ -558,8 +558,13 @@ export const adminUsersApi = {
 
   get: (id: string) => apiClient.get<EtheriaUserResponse>(`/api/v1/admin/users/${id}`),
 
-  create: (data: { email: string; firstName?: string; lastName?: string; role?: string }) =>
-    apiClient.post<EtheriaUserResponse>("/api/v1/admin/users", data),
+  create: (data: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+    password: string;
+  }) => apiClient.post<EtheriaUserResponse>("/api/v1/admin/users", data),
 
   update: (
     id: string,

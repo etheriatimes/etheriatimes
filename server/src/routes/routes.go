@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -11,7 +13,18 @@ import (
 	"github.com/etheriatimes/website/server/src/models"
 	"github.com/etheriatimes/website/server/src/services"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
+
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+func checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
 
 // SetupRoutes configure toutes les routes API
 // C'est le point d'entrée principal pour la configuration des routes
@@ -30,6 +43,7 @@ func SetupRoutes(router *gin.Engine, jwtService *services.JWTService) {
 			auth.POST("/refresh", authHandler.Refresh)
 			auth.POST("/change-password", authMiddleware.RequireAuth(), authHandler.ChangePassword)
 			auth.POST("/reset-password", authHandler.ResetPassword)
+			auth.POST("/validate", authHandler.ValidateToken)
 		}
 
 		// ==================== ACCOUNT ====================
@@ -334,6 +348,17 @@ func SetupRoutes(router *gin.Engine, jwtService *services.JWTService) {
 			footerLinks.PUT("/:id", footerLinkHandler.UpdateFooterLink)
 			footerLinks.DELETE("/:id", footerLinkHandler.DeleteFooterLink)
 		}
+
+		// ==================== DOCKER ====================
+		dockerHandler := NewDockerHandler()
+		docker := api.Group("/docker")
+		docker.Use(authMiddleware.RequireAuth())
+		{
+			docker.GET("/logs", dockerHandler.GetLogs)
+			docker.POST("/exec", dockerHandler.ExecCommand)
+			docker.GET("/status", dockerHandler.GetStatus)
+			docker.GET("/containers", dockerHandler.ListContainers)
+		}
 	}
 }
 
@@ -371,6 +396,21 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		isValid = true
 		userID = "demo-1"
 		userName = "Demo User"
+	} else {
+		prismaService := services.GetPrismaService()
+		if prismaService != nil {
+			etheriaUser, err := prismaService.GetUserByEmail(req.Email)
+			if err == nil && etheriaUser != nil && etheriaUser.IsActive {
+				if checkPasswordHash(req.Password, etheriaUser.Password) {
+					isValid = true
+					userID = etheriaUser.ID
+					userName = strings.TrimSpace(etheriaUser.FirstName + " " + etheriaUser.LastName)
+					if userName == "" {
+						userName = etheriaUser.Email
+					}
+				}
+			}
+		}
 	}
 
 	if !isValid {
@@ -408,6 +448,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		}
 	}
 
+	c.SetCookie("auth_token", token, 86400*7, "/", "", false, true)
 	c.JSON(http.StatusOK, models.AuthResponse{
 		Success: true,
 		Data: &models.TokenResponse{
@@ -418,6 +459,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
+	c.SetCookie("auth_token", "", -1, "/", "", false, true)
 	c.JSON(http.StatusOK, models.AuthResponse{Success: true, Message: "Logged out successfully"})
 }
 
@@ -493,6 +535,29 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		Success: true,
 		Data:    &models.TokenResponse{User: user},
 		Message: "Registration successful",
+	})
+}
+
+type ValidateTokenRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
+func (h *AuthHandler) ValidateToken(c *gin.Context) {
+	var req ValidateTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.AuthResponse{Success: false, Error: "Token required"})
+		return
+	}
+
+	claims, err := h.jwtService.ValidateToken(req.Token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.AuthResponse{Success: false, Error: "Invalid or expired token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.AuthResponse{
+		Success: true,
+		Data:    &models.TokenResponse{User: &models.User{ID: claims.UserID, Email: claims.Email, Name: claims.Username, Active: true}},
 	})
 }
 
@@ -1513,21 +1578,28 @@ func (h *EtheriaHandlers) CreateUser(c *gin.Context) {
 		FirstName string `json:"firstName"`
 		LastName  string `json:"lastName"`
 		Role      string `json:"role"`
+		Password  string `json:"password"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ApiResponse{Success: false, Error: err.Error()})
 		return
 	}
 
+	if req.Password == "" {
+		c.JSON(http.StatusBadRequest, models.ApiResponse{Success: false, Error: "Password is required"})
+		return
+	}
+
 	prismaService := services.GetPrismaService()
 	if prismaService != nil {
-		user, err := prismaService.CreateUser(req.Email, req.FirstName, req.LastName, req.Role)
+		user, err := prismaService.CreateUser(req.Email, req.FirstName, req.LastName, req.Role, req.Password)
 		if err == nil {
 			c.JSON(http.StatusCreated, models.ApiResponse{Success: true, Data: user})
 			return
 		}
 	}
 
+	hashedPassword, _ := hashPassword(req.Password)
 	user := models.EtheriaUser{
 		ID:        fmt.Sprintf("user_%d", time.Now().UnixNano()),
 		Email:     req.Email,
@@ -1536,6 +1608,7 @@ func (h *EtheriaHandlers) CreateUser(c *gin.Context) {
 		Role:      models.RoleUser,
 		IsActive:  true,
 	}
+	_ = hashedPassword
 	c.JSON(http.StatusCreated, models.ApiResponse{Success: true, Data: user})
 }
 
@@ -2565,4 +2638,145 @@ func (h *FooterLinkHandler) UpdateFooterLink(c *gin.Context) {
 func (h *FooterLinkHandler) DeleteFooterLink(c *gin.Context) {
 	id := c.Param("id")
 	c.JSON(http.StatusOK, models.ApiResponse{Success: true, Message: "Link deleted: " + id})
+}
+
+// ==================== DOCKER HANDLER ====================
+
+type DockerHandler struct{}
+
+func NewDockerHandler() *DockerHandler {
+	return &DockerHandler{}
+}
+
+type DockerLogRequest struct {
+	Container string `form:"container" json:"container"`
+	Lines     int    `form:"lines" json:"lines"`
+}
+
+func (h *DockerHandler) GetLogs(c *gin.Context) {
+	var req DockerLogRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		req.Lines = 100
+	}
+	if req.Container == "" {
+		req.Container = "etheriatimes"
+	}
+	if req.Lines == 0 {
+		req.Lines = 100
+	}
+
+	cmd := exec.Command("docker", "logs", "--tail", strconv.Itoa(req.Lines), req.Container)
+	var out, errBuf bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &errBuf
+
+	_ = cmd.Run()
+
+	logs := out.String()
+	if errBuf.Len() > 0 {
+		logs = logs + "\n" + errBuf.String()
+	}
+
+	c.JSON(http.StatusOK, models.ApiResponse{
+		Success: true,
+		Data: gin.H{
+			"logs":      splitLines(logs),
+			"container": req.Container,
+		},
+	})
+}
+
+type DockerExecRequest struct {
+	Container string `json:"container" binding:"required"`
+	Command   string `json:"command" binding:"required"`
+}
+
+func (h *DockerHandler) ExecCommand(c *gin.Context) {
+	var req DockerExecRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ApiResponse{Success: false, Error: err.Error()})
+		return
+	}
+	if req.Container == "" {
+		req.Container = "etheriatimes"
+	}
+
+	cmd := exec.Command("docker", "exec", req.Container, "sh", "-c", req.Command)
+	var out, errBuf bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &errBuf
+
+	err := cmd.Run()
+	output := out.String()
+	if errBuf.Len() > 0 && err != nil {
+		output = output + "\n" + errBuf.String()
+	}
+
+	c.JSON(http.StatusOK, models.ApiResponse{
+		Success: err == nil,
+		Data: gin.H{
+			"output":   output,
+			"exitCode": 0,
+		},
+	})
+}
+
+func (h *DockerHandler) GetStatus(c *gin.Context) {
+	container := c.DefaultQuery("container", "etheriatimes")
+
+	cmd := exec.Command("docker", "inspect", "--format", "{{.State.Running}}", container)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Run()
+
+	running := strings.TrimSpace(out.String()) == "true"
+
+	cmd = exec.Command("docker", "inspect", "--format", "{{.State.StartedAt}}", container)
+	out.Reset()
+	cmd.Stdout = &out
+	cmd.Run()
+	startedAt := strings.TrimSpace(out.String())
+
+	c.JSON(http.StatusOK, models.ApiResponse{
+		Success: true,
+		Data: gin.H{
+			"running":   running,
+			"startedAt": startedAt,
+			"container": container,
+		},
+	})
+}
+
+func (h *DockerHandler) ListContainers(c *gin.Context) {
+	cmd := exec.Command("docker", "ps", "--format", "{{.Names}}|{{.Status}}|{{.Image}}")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Run()
+
+	var containers []gin.H
+	for _, line := range splitLines(out.String()) {
+		parts := strings.Split(line, "|")
+		if len(parts) >= 3 {
+			containers = append(containers, gin.H{
+				"name":   parts[0],
+				"status": parts[1],
+				"image":  parts[2],
+			})
+		}
+	}
+
+	c.JSON(http.StatusOK, models.ApiResponse{
+		Success: true,
+		Data:    containers,
+	})
+}
+
+func splitLines(s string) []string {
+	var lines []string
+	for _, line := range strings.Split(s, "\n") {
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines
 }

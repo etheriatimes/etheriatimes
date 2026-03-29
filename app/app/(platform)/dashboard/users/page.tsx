@@ -184,17 +184,22 @@ export default function UsersPage() {
     setIsLoading(true);
     try {
       const response = await adminUsersApi.list({ pageSize: 50 });
-      if (response.success && response.data) {
+      if (response.data) {
         const mapped: UserDisplay[] = response.data.map((u) => ({
           id: u.id,
-          name: u.name || u.username || "Unknown",
+          name:
+            u.firstName && u.lastName
+              ? `${u.firstName} ${u.lastName}`
+              : u.firstName || u.email.split("@")[0],
           email: u.email,
           avatar: u.avatarUrl,
           role:
             (u.role?.toLowerCase() as "admin" | "editor" | "author" | "subscriber") || "subscriber",
-          status: u.active ? "active" : "inactive",
+          status: u.isActive ? "active" : "inactive",
           articlesCount: 0,
-          joinedAt: u.createdAt || new Date().toISOString(),
+          joinedAt: u.createdAt
+            ? new Date(u.createdAt).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
         }));
         setUsers(mapped);
       }
@@ -254,7 +259,7 @@ export default function UsersPage() {
   };
 
   const handleCreate = async () => {
-    if (!newUserName.trim() || !newUserEmail.trim()) return;
+    if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim()) return;
 
     const nameParts = newUserName.trim().split(" ");
     const firstName = nameParts[0];
@@ -266,6 +271,7 @@ export default function UsersPage() {
         firstName,
         lastName,
         role: newUserRole.toUpperCase(),
+        password: newUserPassword,
       })) as { success: boolean; data?: { id: string } };
 
       if (response.success && response.data) {
@@ -536,6 +542,7 @@ export default function UsersPage() {
                 id="userPassword"
                 type="password"
                 placeholder="Mot de passe"
+                required
                 value={newUserPassword}
                 onChange={(e) => setNewUserPassword(e.target.value)}
               />
@@ -562,7 +569,10 @@ export default function UsersPage() {
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleCreate} disabled={!newUserName.trim() || !newUserEmail.trim()}>
+            <Button
+              onClick={handleCreate}
+              disabled={!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim()}
+            >
               Créer
             </Button>
           </DialogFooter>

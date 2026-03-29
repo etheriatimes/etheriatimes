@@ -15,6 +15,7 @@ class AuthApiService {
 
     const config: RequestInit = {
       ...options,
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...options.headers,

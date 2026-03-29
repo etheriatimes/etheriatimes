@@ -1,8 +1,13 @@
 import { apiClient } from "./client";
 
 export interface DockerLogResponse {
-  logs: string[];
+  logs?: string[];
+  container?: string;
   success: boolean;
+  data?: {
+    logs: string[];
+    container: string;
+  };
 }
 
 export interface DockerExecResponse {
@@ -19,7 +24,7 @@ class DockerApi {
     lines: number = 100
   ): Promise<DockerLogResponse> {
     try {
-      const response = await this.client.get<DockerLogResponse>(`/api/docker/logs`, {
+      const response = await this.client.get<DockerLogResponse>(`/api/v1/docker/logs`, {
         params: {
           container: containerName,
           lines: lines.toString(),
@@ -36,7 +41,7 @@ class DockerApi {
     containerName: string = "etheriatimes"
   ): Promise<DockerExecResponse> {
     try {
-      const response = await this.client.post<DockerExecResponse>(`/api/docker/exec`, {
+      const response = await this.client.post<DockerExecResponse>(`/api/v1/docker/exec`, {
         container: containerName,
         command,
       });
@@ -55,7 +60,7 @@ class DockerApi {
   ): Promise<{ running: boolean; uptime: string }> {
     try {
       const response = await this.client.get<{ running: boolean; uptime: string }>(
-        `/api/docker/status`,
+        `/api/v1/docker/status`,
         {
           params: { container: containerName },
         }

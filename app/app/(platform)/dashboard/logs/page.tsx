@@ -21,11 +21,7 @@ import {
   Terminal,
   Terminal as TerminalIcon,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { dockerApi } from "@/lib/api/docker";
 
 interface LogEntry {
@@ -113,8 +109,9 @@ export default function LogsPage() {
     try {
       setIsLoading(true);
       const response = await dockerApi.getLogs("etheriatimes", 100);
-      if (response.success && response.logs) {
-        const parsedLogs: LogEntry[] = response.logs.map((log: string, index: number) => {
+      const logsData = response.data?.logs || response.logs || [];
+      if (response.success && logsData.length > 0) {
+        const parsedLogs: LogEntry[] = logsData.map((log: string, index: number) => {
           const match = log.match(
             /^\[?(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[^\]]*)\]?\s*\[?(\w+)\]?\s*(.*)$/
           );
