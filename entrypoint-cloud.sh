@@ -15,6 +15,10 @@ echo "[*] Fixing pnpm..."
 rm -f /usr/local/bin/pnpm
 npm install -g pnpm@9.15.4
 
+export NEXT_PUBLIC_BASE_PATH=""
+export NEXT_TELEMETRY_DISABLED=1
+export NEXT_PUBLIC_INTL_CONFIG='{"locale":"en","messages":{}}'
+
 echo "[*] Waiting for database to be ready..."
 MAX_RETRIES=30
 RETRY_COUNT=0
@@ -55,7 +59,7 @@ fi
 
 echo "[*] Starting Next.js on :3000..."
 cd /app
-HOST=0.0.0.0 PORT=3000 node server.js &
+PORT=3000 node server.js &
 NEXT_PID=$!
 
 echo "[*] Starting Go API server on :8080..."
