@@ -25,9 +25,10 @@
       "@/context/*": ["./context/*"],
       "@/lib/*": ["./lib/*"],
       "@/styles/*": ["./styles/*"],
-      "@/hook/*": ["./hook"],
+      "@/hooks/*": ["./hooks/*"],
       "@/services/*": ["./services"],
-      "@/options/*": ["./options/*"]
+      "@/options/*": ["./options/*"],
+      "@/i18n/*": ["./i18n/*"]
     },
     "types": ["next", "node"],
     "allowImportingTsExtensions": true

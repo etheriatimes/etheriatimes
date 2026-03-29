@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { locales, defaultLocale, type Locale } from "@/lib/locale";
+import { routing } from "./i18n/routing";
+
+type Locale = (typeof routing.locales)[number];
 
 const countryToLocale: Record<string, Locale> = {
   BE: "be_fr",
@@ -20,11 +22,17 @@ function getLocaleFromCountry(country: string | null): Locale {
   if (country && country in countryToLocale) {
     return countryToLocale[country];
   }
-  return defaultLocale;
+  return routing.defaultLocale;
 }
 
-export function proxy(request: NextRequest) {
+function isValidLocale(locale: string): locale is Locale {
+  return routing.locales.includes(locale as Locale);
+}
+
+export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const segments = pathname.split("/").filter(Boolean);
+  const urlLocale = segments[0];
 
   if (pathname === "/" || pathname === "") {
     const country = getCountryFromRequest(request);
@@ -32,9 +40,18 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${locale}`, request.url));
   }
 
+  if (urlLocale && !isValidLocale(urlLocale)) {
+    const country = getCountryFromRequest(request);
+    const locale = getLocaleFromCountry(country);
+    const newPath = `/${locale}${pathname}`;
+    return NextResponse.redirect(new URL(newPath, request.url));
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|login|register|dashboard|user).*)",
+  ],
 };

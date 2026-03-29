@@ -34,7 +34,7 @@ build-server:
 	docker build -f Dockerfile -t $(APP_NAME)-server:latest --target backend-builder .
 
 build-dev:
-	docker build -f Dockerfile.dev -t $(APP_NAME)-dev:latest .
+	docker build --no-cache -f Dockerfile.dev -t $(APP_NAME)-dev:latest .
 
 build-cloud:
 	docker build -f Dockerfile.cloud -t $(APP_NAME):latest .
@@ -74,7 +74,12 @@ dev-down:
 	docker compose -f docker-compose.dev.yml down
 
 dev-logs:
-	docker logs -f $(APP_NAME)
+	docker compose -f docker-compose.dev.yml logs -f
+
+dev-rebuild:
+	docker compose -f docker-compose.dev.yml down
+	docker build --no-cache -f Dockerfile.dev -t $(APP_NAME):latest .
+	docker compose -f docker-compose.dev.yml up -d
 
 cloud-up:
 	docker compose -f docker-compose.cloud.yml up -d

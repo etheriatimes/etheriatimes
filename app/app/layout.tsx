@@ -17,7 +17,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "The Etheria Times - Actualités en direct et info en continu",
+  title: {
+    template: "%s | The Etheria Times",
+    default: "The Etheria Times - Actualités en direct et info en continu",
+  },
   description:
     "Toute l'actualité en direct, les news et infos en continu : politique, économie, société, culture, sport et international sur The Etheria Times.",
   icons: {
@@ -45,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={`${inter.variable} ${sourceSerif.variable} font-sans antialiased`}
