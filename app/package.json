@@ -1,5 +1,5 @@
 {
-  "name": "@website/app",
+  "name": "@etheriatimes/app",
   "version": "1.0.0",
   "description": "Frontend application for Etheria Times Website",
   "private": true,

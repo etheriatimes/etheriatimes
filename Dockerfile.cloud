@@ -26,15 +26,15 @@ RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 COPY app/package.json app/pnpm-lock.yaml* ./
 
-RUN pnpm install --frozen-lockfile --ignore-scripts
-
-# ── Prisma ─────────────────────────────────────────────────────────────────────
-COPY server/prisma/ ./prisma/
-RUN cd prisma && npm install --silent && npx prisma generate
+RUN pnpm install
 
 # ── Build Next.js ─────────────────────────────────────────────────────────────
 COPY app/ ./app/
-RUN NODE_ENV=production pnpm --filter @website/app build
+RUN cd /app/app && node ../node_modules/next/dist/bin/next build
+
+# ── Prisma ─────────────────────────────────────────────────────────────────────
+COPY server/prisma/ /app/prisma/
+RUN cd /app/prisma && npm install --silent && npx prisma generate
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage final — Image de production (Single Container)
@@ -54,6 +54,9 @@ RUN apk add --no-cache \
     postgresql-client \
     openssl
 
+# ── pnpm (pour Next.js) ───────────────────────────────────────────────────────
+RUN npm install -g pnpm@9.15.4
+
 # ── Go Runtime (pour le serveur API) ───────────────────────────────────────────
 RUN ARCH=$(uname -m) && \
     case "$ARCH" in \
@@ -65,12 +68,8 @@ RUN ARCH=$(uname -m) && \
     && tar -C /usr/local -xzf /tmp/go.tar.gz \
     && rm /tmp/go.tar.gz
 
-ENV PATH="/usr/local/go/bin:/go/bin:/root/go/bin:/root/.local/share/corepack:/usr/local/bin:/usr/bin:/bin:${PATH}"
+ENV PATH="/usr/local/go/bin:/go/bin:/root/go/bin:/go/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
 ENV GOPATH="/go"
-
-# ── pnpm (pour Next.js production) ───────────────────────────────────────────
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate && \
-    ln -sf /root/.local/share/corepack/pnpm /usr/local/bin/pnpm
 
 WORKDIR /app
 

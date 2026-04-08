@@ -56,6 +56,7 @@ display_header() {
     log_info "Frontend: http://localhost:${FRONTEND_PORT}"
     log_info "API:      http://localhost:${API_PORT}"
     log_info "Database: ${DB_HOST}:${DB_PORT}/${DB_NAME}"
+    log_info "Admin:    admin@etheriatimes.com / Admin123!"
     echo ""
 }
 
@@ -88,7 +89,7 @@ wait_for_database() {
 run_migrations() {
     log_info "Running database migrations..."
 
-    PRISMA_DIR="/app/server/prisma"
+    PRISMA_DIR="/app/prisma"
 
     if [ -d "$PRISMA_DIR" ]; then
         cd "$PRISMA_DIR"
@@ -115,9 +116,10 @@ run_migrations() {
 start_frontend() {
     log_info "Starting Next.js (production mode) on port ${FRONTEND_PORT}..."
 
-    cd /app/app
+    cd /app
 
     export PORT="$FRONTEND_PORT"
+    export HOST="0.0.0.0"
     export NEXT_PUBLIC_BASE_PATH=""
     export NEXT_TELEMETRY_DISABLED=1
 
@@ -146,6 +148,7 @@ start_api() {
 
     export SERVER_PORT="$API_PORT"
     export ENVIRONMENT="production"
+    export GIN_MODE=release
 
     ./server/etheriatimes-api &
     API_PID=$!

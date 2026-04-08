@@ -37,7 +37,7 @@ build-dev:
 	docker build --no-cache -f Dockerfile.dev -t $(APP_NAME)-dev:latest .
 
 build-cloud:
-	docker build -f Dockerfile.cloud -t $(APP_NAME):latest .
+	docker build --no-cache -f Dockerfile.cloud -t $(APP_NAME):latest .
 
 run-app:
 	docker run --name $(APP_NAME)-app -p 3000:3000 $(APP_NAME)-app:latest

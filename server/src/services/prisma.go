@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/etheriatimes/website/server/src/config"
-	"github.com/etheriatimes/website/server/src/models"
+	"github.com/etheriatimes/etheriatimes/server/src/config"
+	"github.com/etheriatimes/etheriatimes/server/src/models"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )

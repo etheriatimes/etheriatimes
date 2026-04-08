@@ -1,5 +1,5 @@
 {
-  "name": "@website/prisma",
+  "name": "@etheriatimes/prisma",
   "version": "1.0.0",
   "description": "Prisma schema and database layer for The Etheria Times",
   "private": true,

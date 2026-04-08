@@ -7,10 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/etheriatimes/website/server/src/config"
-	"github.com/etheriatimes/website/server/src/middleware"
-	"github.com/etheriatimes/website/server/src/routes"
-	"github.com/etheriatimes/website/server/src/services"
+	"github.com/etheriatimes/etheriatimes/server/src/config"
+	"github.com/etheriatimes/etheriatimes/server/src/middleware"
+	"github.com/etheriatimes/etheriatimes/server/src/routes"
+	"github.com/etheriatimes/etheriatimes/server/src/services"
 )
 
 func displayBanner() {
@@ -39,6 +39,10 @@ func displayBanner() {
 }
 
 func main() {
+	if os.Getenv("GIN_MODE") == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	displayBanner()
 
 	cfg := config.Load()
@@ -54,7 +58,8 @@ func main() {
 
 	jwtService := services.NewJWTService(cfg.JWT.Secret, cfg.JWT.Expiry, cfg.JWT.Issuer)
 
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
 
 	router.Use(middleware.CORS(cfg.CORS.AllowedOrigins))
 

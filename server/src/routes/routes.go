@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/etheriatimes/website/server/src/middleware"
-	"github.com/etheriatimes/website/server/src/models"
-	"github.com/etheriatimes/website/server/src/services"
+	"github.com/etheriatimes/etheriatimes/server/src/middleware"
+	"github.com/etheriatimes/etheriatimes/server/src/models"
+	"github.com/etheriatimes/etheriatimes/server/src/services"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )

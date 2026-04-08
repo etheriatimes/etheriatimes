@@ -1,4 +1,4 @@
-module github.com/etheriatimes/website
+module github.com/etheriatimes/etheriatimes
 
 go 1.25.5
 
