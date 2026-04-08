@@ -1,7 +1,7 @@
 {
-  "name": "@aether-account/prisma",
+  "name": "@website/prisma",
   "version": "1.0.0",
-  "description": "Prisma schema and database layer for Aether Account",
+  "description": "Prisma schema and database layer for The Etheria Times",
   "private": true,
   "main": "schema.prisma",
   "scripts": {

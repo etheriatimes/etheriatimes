@@ -1,82 +1,232 @@
 #!/bin/sh
 set -e
 
+# =============================================================================
+# The Etheria Times - Production Service Entry Point
+# =============================================================================
+
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/go/bin:/go/bin:/root/go/bin:/root/.local/share/corepack"
+export NODE_ENV="${NODE_ENV:-production}"
 
-echo "=========================================="
-echo "  Etheria Times - Production Services"
-echo "  - Frontend: http://localhost:3000"
-echo "  - API:      http://localhost:8080"
-echo "  - DB:       db:5432 (via Docker network)"
-echo "=========================================="
-echo ""
+# =============================================================================
+# Configuration
+# =============================================================================
 
-echo "[*] Fixing pnpm..."
-rm -f /usr/local/bin/pnpm
-npm install -g pnpm@9.15.4
+DB_HOST="${DB_HOST:-db}"
+DB_PORT="${DB_PORT:-5432}"
+DB_USER="${DB_USER:-aether}"
+DB_NAME="${DB_NAME:-etheria_account}"
+DB_PASSWORD="${DB_PASSWORD:-${POSTGRES_PASSWORD:-password}}"
 
-export NEXT_PUBLIC_BASE_PATH=""
-export NEXT_TELEMETRY_DISABLED=1
-export NEXT_PUBLIC_INTL_CONFIG='{"locale":"en","messages":{}}'
+FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+API_PORT="${API_PORT:-8080}"
 
-echo "[*] Waiting for database to be ready..."
-MAX_RETRIES=30
-RETRY_COUNT=0
-until PGPASSWORD="${DB_PASSWORD:-password}" psql -h db -U aether -d etheria_account -c '\q' 2>/dev/null; do
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-        echo "[!] Database not available after $MAX_RETRIES attempts, continuing anyway..."
-        break
+# =============================================================================
+# Logging Functions
+# =============================================================================
+
+log_info() {
+    echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1"
+}
+
+log_success() {
+    echo "[✓]  $(date '+%Y-%m-%d %H:%M:%S') - $1"
+}
+
+log_warn() {
+    echo "[!]  $(date '+%Y-%m-%d %H:%M:%S') - $1"
+}
+
+log_error() {
+    echo "[X]  $(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+# =============================================================================
+# Header Display
+# =============================================================================
+
+display_header() {
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════════════╗"
+    echo "║                    The Etheria Times                                 ║"
+    echo "║               Enterprise Account Management                          ║"
+    echo "║                   Version 1.0.0-production                           ║"
+    echo "╚══════════════════════════════════════════════════════════════════════╝"
+    echo ""
+    log_info "Frontend: http://localhost:${FRONTEND_PORT}"
+    log_info "API:      http://localhost:${API_PORT}"
+    log_info "Database: ${DB_HOST}:${DB_PORT}/${DB_NAME}"
+    echo ""
+}
+
+# =============================================================================
+# Database Setup (External PostgreSQL)
+# =============================================================================
+
+wait_for_database() {
+    log_info "Waiting for database to be ready..."
+
+    MAX_RETRIES=60
+    RETRY_COUNT=0
+
+    while ! PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c '\q' 2>/dev/null; do
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+
+        if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+            log_error "Database not available after ${MAX_RETRIES} attempts"
+            return 1
+        fi
+
+        log_info "Waiting for database... (${RETRY_COUNT}/${MAX_RETRIES})"
+        sleep 2
+    done
+
+    log_success "Database connected"
+    return 0
+}
+
+run_migrations() {
+    log_info "Running database migrations..."
+
+    PRISMA_DIR="/app/server/prisma"
+
+    if [ -d "$PRISMA_DIR" ]; then
+        cd "$PRISMA_DIR"
+
+        if [ -f "schema.prisma" ]; then
+            log_info "Generating Prisma client..."
+            PGPASSWORD="$DB_PASSWORD" npx prisma generate 2>/dev/null || log_warn "Prisma generate failed"
+
+            log_info "Running database migrations..."
+            PGPASSWORD="$DB_PASSWORD" DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" \
+                npx prisma db push --accept-data-loss 2>/dev/null || log_warn "Prisma db push failed"
+        fi
+
+        log_success "Database migrations complete"
+    else
+        log_warn "Prisma directory not found"
     fi
-    echo "[*] Waiting for database... ($RETRY_COUNT/$MAX_RETRIES)"
-    sleep 2
-done
+}
 
-if PGPASSWORD="${DB_PASSWORD:-password}" psql -h db -U aether -d etheria_account -c '\q' 2>/dev/null; then
-    echo "[*] Database connected, initializing tables..."
-    
-    PGPASSWORD="${DB_PASSWORD:-password}" psql -h db -U aether -d etheria_account <<-EOSQL
-		CREATE TABLE IF NOT EXISTS users (
-		    id VARCHAR(255) PRIMARY KEY,
-		    email VARCHAR(255) UNIQUE NOT NULL,
-		    password_hash VARCHAR(255),
-		    first_name VARCHAR(255),
-		    last_name VARCHAR(255),
-		    phone VARCHAR(50),
-		    avatar_url TEXT,
-		    role VARCHAR(50) DEFAULT 'USER',
-		    is_active BOOLEAN DEFAULT true,
-		    email_verified TIMESTAMP,
-		    created_at TIMESTAMP DEFAULT NOW(),
-		    updated_at TIMESTAMP DEFAULT NOW()
-		);
-	EOSQL
-    
-    echo "[✓] Database tables initialized"
-else
-    echo "[!] Database not available, running in mock mode"
-fi
+# =============================================================================
+# Service Starters
+# =============================================================================
 
-echo "[*] Starting Next.js on :3000..."
-cd /app
-PORT=3000 node server.js &
-NEXT_PID=$!
+start_frontend() {
+    log_info "Starting Next.js (production mode) on port ${FRONTEND_PORT}..."
 
-echo "[*] Starting Go API server on :8080..."
-cd /app
-./server/etheriatimes-api &
-API_PID=$!
+    cd /app/app
 
-echo "[*] All services started! Press Ctrl+C to stop"
-echo ""
+    export PORT="$FRONTEND_PORT"
+    export NEXT_PUBLIC_BASE_PATH=""
+    export NEXT_TELEMETRY_DISABLED=1
+
+    node server.js &
+    NEXT_PID=$!
+    echo "$NEXT_PID" > /tmp/next.pid
+
+    log_info "Next.js started (PID: $NEXT_PID)"
+
+    sleep 3
+
+    if kill -0 "$NEXT_PID" 2>/dev/null; then
+        log_success "Next.js is ready"
+    else
+        log_error "Next.js failed to start"
+        return 1
+    fi
+
+    return 0
+}
+
+start_api() {
+    log_info "Starting Go API server on port ${API_PORT}..."
+
+    cd /app
+
+    export SERVER_PORT="$API_PORT"
+    export ENVIRONMENT="production"
+
+    ./server/etheriatimes-api &
+    API_PID=$!
+    echo "$API_PID" > /tmp/api.pid
+
+    log_info "Go API server started (PID: $API_PID)"
+
+    sleep 3
+
+    if kill -0 "$API_PID" 2>/dev/null; then
+        log_success "Go API server is ready"
+    else
+        log_error "Go API server failed to start"
+        return 1
+    fi
+
+    return 0
+}
+
+# =============================================================================
+# Service Monitor
+# =============================================================================
+
+monitor_services() {
+    log_success "All services started successfully!"
+    echo ""
+    echo "══════════════════════════════════════════════════════════════════════"
+    echo "  Services are running. Press Ctrl+C to stop."
+    echo "══════════════════════════════════════════════════════════════════════"
+    echo ""
+
+    while true; do
+        if ! kill -0 "$NEXT_PID" 2>/dev/null || ! kill -0 "$API_PID" 2>/dev/null; then
+            log_error "A service has stopped unexpectedly!"
+            break
+        fi
+        sleep 5
+    done
+}
+
+# =============================================================================
+# Cleanup Handler
+# =============================================================================
 
 cleanup() {
-    echo "[*] Stopping services..."
-    kill $API_PID $NEXT_PID 2>/dev/null
-    wait $API_PID $NEXT_PID 2>/dev/null
+    echo ""
+    log_info "Stopping services..."
+
+    if [ -f /tmp/next.pid ]; then
+        kill "$(cat /tmp/next.pid)" 2>/dev/null || true
+        rm -f /tmp/next.pid
+    fi
+
+    if [ -f /tmp/api.pid ]; then
+        kill "$(cat /tmp/api.pid)" 2>/dev/null || true
+        rm -f /tmp/api.pid
+    fi
+
+    log_info "All services stopped"
     exit 0
+}
+
+# =============================================================================
+# Main Execution
+# =============================================================================
+
+main() {
+    display_header
+
+    if wait_for_database; then
+        run_migrations
+    else
+        log_error "Database not available, starting without migrations..."
+    fi
+
+    start_frontend || log_error "Frontend failed to start"
+    start_api || log_error "API failed to start"
+
+    monitor_services
 }
 
 trap cleanup SIGINT SIGTERM
 
-wait
+main

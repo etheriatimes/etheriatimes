@@ -43,7 +43,9 @@ RUN apk add --no-cache \
     wget \
     build-base \
     libc6-compat \
-    docker-cli
+    docker-cli \
+    postgresql-client \
+    openssl
 
 # ── Go (requis par Air pour recompiler à chaud) ───────────────────────────────
 RUN ARCH=$(uname -m) && \
@@ -94,6 +96,7 @@ COPY app/lib/                 ./app/lib/
 COPY app/public/              ./app/public/
 COPY app/styles/              ./app/styles/
 COPY server/prisma/           ./prisma/
+COPY scripts/                 ./app/scripts/
 
 # ── Config dev ────────────────────────────────────────────────────────────────
 COPY .air.toml   ./

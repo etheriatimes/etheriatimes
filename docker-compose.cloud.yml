@@ -6,62 +6,45 @@ services:
     image: etheriatimes:latest
     container_name: etheriatimes
     restart: unless-stopped
-
+    ports:
+      - "3000:3000"
     expose:
-      - "3000"
-      # 8080 et 5432 restent internes au container — pas exposés à l'hôte
-
+      - "8080"
     environment:
-      # App
-      - NODE_ENV=production
-      - ENVIRONMENT=production
-
-      # Next.js → Go API (interne au container)
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
-      - SERVER_PORT=8080
-
-      # PostgreSQL (interne au container)
-      - DATABASE_URL=postgresql://aether:${DB_PASSWORD}@localhost:5432/etheria_account
-
-      # Sécurité
-      - JWT_SECRET=${JWT_SECRET}
-      - CORS_ALLOWED_ORIGINS=https://etheriatimes.com,https://www.etheriatimes.com
-
+      NODE_ENV: production
+      ENVIRONMENT: production
+      DB_PASSWORD: ${DB_PASSWORD}
+      DATABASE_URL: postgresql://aether:${DB_PASSWORD}@localhost:5432/etheria_account
+      JWT_SECRET: ${JWT_SECRET}
+      SERVER_PORT: 8080
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_ENVIRONMENT: production
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     volumes:
-      # ⚠️ Critique : sans ça, les données Postgres sont perdues à chaque restart
-      - postgres_data:/var/lib/postgresql/data
-
-      # Optionnel : logs persistants hors du container
+      - ./scripts:/app/scripts
       - ./logs:/app/logs
-
+      - postgres_data:/var/lib/postgresql/data
+    working_dir: /app
+    command: ["/entrypoint-cloud.sh"]
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          # Vérifie Next.js ET l'API Go en une seule passe
-          "wget -qO- http://localhost:3000/health && wget -qO- http://localhost:8080/health",
-        ]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health 2>/dev/null || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s  # Laisse le temps à Postgres + Go + Next.js de démarrer
-
-    # Limite les ressources pour éviter un OOM sur un petit VPS
-    deploy:
-      resources:
-        limits:
-          cpus: "1.5"
-          memory: 1G
-        reservations:
-          cpus: "0.5"
-          memory: 512M
-
+      retries: 3
+      start_period: 60s
     logging:
       driver: "json-file"
       options:
         max-size: "20m"
         max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 1.5G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
 
 volumes:
   postgres_data:
-    driver: local
