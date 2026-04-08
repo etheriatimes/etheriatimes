@@ -54,6 +54,11 @@ RUN apk add --no-cache \
     postgresql-client \
     openssl
 
+# ── PostgreSQL (Embedded) ───────────────────────────────────────────────────
+RUN apk add --no-cache postgresql16 postgresql16-client && \
+    mkdir -p /var/lib/postgresql/data /var/lib/postgresql/logs && \
+    chown -R postgres:postgres /var/lib/postgresql
+
 # ── pnpm (pour Next.js) ───────────────────────────────────────────────────────
 RUN npm install -g pnpm@9.15.4
 

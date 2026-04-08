@@ -12,7 +12,7 @@ export NODE_ENV="${NODE_ENV:-production}"
 # Configuration
 # =============================================================================
 
-DB_HOST="${DB_HOST:-db}"
+DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"
 DB_USER="${DB_USER:-aether}"
 DB_NAME="${DB_NAME:-etheria_account}"
@@ -20,6 +20,8 @@ DB_PASSWORD="${DB_PASSWORD:-${POSTGRES_PASSWORD:-password}}"
 
 FRONTEND_PORT="${FRONTEND_PORT:-3000}"
 API_PORT="${API_PORT:-8080}"
+
+USE_EMBEDDED_DB="${USE_EMBEDDED_DB:-true}"
 
 # =============================================================================
 # Logging Functions
@@ -61,10 +63,51 @@ display_header() {
 }
 
 # =============================================================================
-# Database Setup (External PostgreSQL)
+# Database Setup
 # =============================================================================
 
+start_postgres() {
+    if [ "$USE_EMBEDDED_DB" != "true" ]; then
+        return 0
+    fi
+
+    log_info "Starting embedded PostgreSQL..."
+
+    mkdir -p /var/lib/postgresql/data
+
+    if [ ! -d "/var/lib/postgresql/data/base" ]; then
+        log_info "Initializing PostgreSQL database..."
+        su - postgres -c "initdb -D /var/lib/postgresql/data" 2>/dev/null || true
+    fi
+
+    su - postgres -c "pg_ctl -D /var/lib/postgresql/data -l /var/lib/postgresql/logfile start" &
+    POSTGRES_PID=$!
+    echo "$POSTGRES_PID" > /tmp/postgres.pid
+
+    log_info "Waiting for PostgreSQL to be ready..."
+
+    MAX_RETRIES=30
+    RETRY_COUNT=0
+
+    while ! su - postgres -c "psql -l" >/dev/null 2>&1; do
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+            log_error "PostgreSQL failed to start"
+            return 1
+        fi
+        sleep 1
+    done
+
+    log_success "PostgreSQL started"
+    return 0
+}
+
 wait_for_database() {
+    if [ "$USE_EMBEDDED_DB" = "true" ]; then
+        log_info "Database already running (embedded)"
+        return 0
+    fi
+
     log_info "Waiting for database to be ready..."
 
     MAX_RETRIES=60
@@ -96,7 +139,8 @@ run_migrations() {
 
         if [ -f "schema.prisma" ]; then
             log_info "Generating Prisma client..."
-            PGPASSWORD="$DB_PASSWORD" npx prisma generate 2>/dev/null || log_warn "Prisma generate failed"
+            PGPASSWORD="$DB_PASSWORD" DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" \
+                npx prisma generate 2>/dev/null || log_warn "Prisma generate failed"
 
             log_info "Running database migrations..."
             PGPASSWORD="$DB_PASSWORD" DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" \
@@ -207,6 +251,11 @@ cleanup() {
         rm -f /tmp/api.pid
     fi
 
+    if [ -f /tmp/postgres.pid ]; then
+        kill "$(cat /tmp/postgres.pid)" 2>/dev/null || true
+        rm -f /tmp/postgres.pid
+    fi
+
     log_info "All services stopped"
     exit 0
 }
@@ -218,10 +267,14 @@ cleanup() {
 main() {
     display_header
 
-    if wait_for_database; then
-        run_migrations
+    if [ "$USE_EMBEDDED_DB" = "true" ]; then
+        start_postgres || log_warn "Failed to start embedded database"
     else
-        log_error "Database not available, starting without migrations..."
+        if wait_for_database; then
+            run_migrations
+        else
+            log_error "Database not available, starting without migrations..."
+        fi
     fi
 
     start_frontend || log_error "Frontend failed to start"
