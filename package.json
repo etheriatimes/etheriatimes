@@ -8,13 +8,11 @@
     "app",
     "tools",
     "options",
-    "package/node",
-    "package/vscode",
-    "package/extension",
-    "package/snap",
     "tests",
     "messages",
-    "server/prisma"
+    "server/prisma",
+    "package",
+    "package/cli"
   ],
   "scripts": {
     "dev": "concurrently \"pnpm --filter app dev\" \"pnpm --filter server dev\"",
@@ -70,7 +68,7 @@
   "packageManager": "pnpm@8.15.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/etheriatimes/website.git"
+    "url": "https://github.com/etheriatimes/etheriatimes.git"
   },
   "keywords": [
     "news",
@@ -87,9 +85,9 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/etheriatimes/website/issues"
+    "url": "https://github.com/etheriatimes/etheriatimes/issues"
   },
-  "homepage": "https://github.com/etheriatimes/website#readme",
+  "homepage": "https://github.com/etheriatimes/etheriatimes#readme",
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
       "eslint --fix --quiet",

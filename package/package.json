@@ -1,0 +1,15 @@
+{
+  "name": "@etheriatimes/package",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Etheria Times packages",
+  "scripts": {
+    "dev:cli": "pnpm --filter cli dev",
+    "build:cli": "pnpm --filter cli build"
+  },
+  "keywords": [
+    "etheriatimes"
+  ],
+  "author": "The Etheria Times",
+  "license": "MIT"
+}
