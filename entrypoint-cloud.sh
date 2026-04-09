@@ -74,13 +74,15 @@ start_postgres() {
     log_info "Starting embedded PostgreSQL..."
 
     mkdir -p /var/lib/postgresql/data
+    mkdir -p /run/postgresql
+    chown -R postgres:postgres /var/lib/postgresql /run/postgresql
 
     if [ ! -d "/var/lib/postgresql/data/base" ]; then
         log_info "Initializing PostgreSQL database..."
-        su - postgres -c "initdb -D /var/lib/postgresql/data" 2>/dev/null || true
+        su - postgres -c "initdb -D /var/lib/postgresql/data" 2>&1 || true
     fi
 
-    su - postgres -c "pg_ctl -D /var/lib/postgresql/data -l /var/lib/postgresql/logfile start" &
+    su - postgres -c "pg_ctl -D /var/lib/postgresql/data -l /var/lib/postgresql/logfile start -w" &
     POSTGRES_PID=$!
     echo "$POSTGRES_PID" > /tmp/postgres.pid
 
@@ -93,6 +95,9 @@ start_postgres() {
         RETRY_COUNT=$((RETRY_COUNT + 1))
         if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
             log_error "PostgreSQL failed to start"
+            if [ -f /var/lib/postgresql/logfile ]; then
+                log_error "PostgreSQL log: $(cat /var/lib/postgresql/logfile)"
+            fi
             return 1
         fi
         sleep 1

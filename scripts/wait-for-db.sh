@@ -9,8 +9,6 @@ DB_HOST="${DB_HOST:-db}"
 DB_PORT="${DB_PORT:-5432}"
 DB_USER="${DB_USER:-aether}"
 DB_NAME="${DB_NAME:-etheria_account}"
-DB_PASSWORD="${DB_PASSWORD:-password}"
-RETRY_INTERVAL=3
 
 wait_for_db() {
     echo "[1/4] Waiting for PostgreSQL to be ready..."
@@ -46,7 +44,8 @@ setup_prisma() {
     npm install --silent 2>/dev/null || npm install
     
     echo "      Generating Prisma Client..."
-    PGPASSWORD="$DB_PASSWORD" npx prisma generate
+    DATABASE_URL="postgresql://aether:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}" \
+        PGPASSWORD="$DB_PASSWORD" npx prisma generate
     
     echo "      Pushing schema to database..."
     sleep 2

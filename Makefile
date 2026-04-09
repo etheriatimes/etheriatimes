@@ -90,6 +90,11 @@ cloud-down:
 cloud-logs:
 	docker compose -f docker-compose.cloud.yml logs -f
 
+cloud-rebuild:
+	docker compose -f docker-compose.cloud.yml down
+	docker build --no-cache -f Dockerfile.cloud -t $(APP_NAME):latest .
+	docker compose -f docker-compose.cloud.yml up -d
+
 rmi-cloud:
 	docker stop $(APP_NAME) 2>/dev/null || true
 	docker rm $(APP_NAME) 2>/dev/null || true
