@@ -10,14 +10,7 @@ services:
       - "3000"
       - "8080"
       - "5432"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.services.etheriatimes.loadbalancer.server.port=3000"
-      - "traefik.http.routers.etheriatimes.rule=Host(`etheriatimes.com`)"
-      - "traefik.http.routers.etheriatimes.entrypoints=web"
     environment:
-      DOMAIN: etheriatimes.com
       NODE_ENV: production
       ENVIRONMENT: production
       DB_HOST: localhost
