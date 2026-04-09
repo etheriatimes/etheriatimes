@@ -1,10 +1,7 @@
 import { writeFileSync, readFileSync, unlinkSync, existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { spawn } from "child_process";
-import { promisify } from "util";
-
-const exec = promisify(require("child_process").exec);
+import { spawn, execSync } from "child_process";
 
 export async function openEditor(initialContent: string): Promise<string | null> {
   const tempFile = join(tmpdir(), `etheriatimes-${Date.now()}.md`);

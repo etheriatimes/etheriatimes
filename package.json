@@ -7,7 +7,6 @@
   "workspaces": [
     "app",
     "tools",
-    "options",
     "tests",
     "messages",
     "server/prisma",
@@ -110,6 +109,8 @@
     "loglayer": "^9.1.0",
     "next": "^15.3.2",
     "next-intl": "^4.8.3",
-    "pino": "^10.3.1"
+    "pino": "^10.3.1",
+    "stylelint": "^17.6.0",
+    "updates": "^17.13.5"
   }
 }

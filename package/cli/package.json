@@ -4,13 +4,13 @@
   "description": "Etheria Times CLI",
   "private": true,
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "bin": {
-    "etheriatimes": "dist/index.js"
+    "etheriatimes": "dist/index.cjs"
   },
   "scripts": {
     "dev": "tsx src/index.ts",
-    "build": "tsc",
+    "build": "node build.js",
     "cli": "tsx src/index.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "esbuild": "^0.28.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }
