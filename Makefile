@@ -89,3 +89,8 @@ cloud-down:
 
 cloud-logs:
 	docker compose -f docker-compose.cloud.yml logs -f
+
+rmi-cloud:
+	docker stop $(APP_NAME) 2>/dev/null || true
+	docker rm $(APP_NAME) 2>/dev/null || true
+	docker rmi $(APP_NAME):latest 2>/dev/null || true

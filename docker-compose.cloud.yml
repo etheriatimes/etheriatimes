@@ -27,11 +27,19 @@ services:
       GIN_MODE: release
       USE_EMBEDDED_DB: "true"
     volumes:
+      - ./server:/app/server
+      - ./.air.toml:/app/.air.toml
+      - ./app:/app/app
+      - ./messages:/app/messages
       - ./scripts:/app/scripts
+      - /app/app/node_modules
       - ./logs:/app/logs
-      - postgres_data:/var/lib/postgresql/data
+      - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app
-    command: ["/entrypoint-cloud.sh"]
+    entrypoint: ["/app/scripts/wait-for-db.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health 2>/dev/null || exit 1"]
       interval: 30s
