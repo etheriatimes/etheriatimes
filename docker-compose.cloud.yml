@@ -6,12 +6,18 @@ services:
     image: etheriatimes:latest
     container_name: etheriatimes
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.etheriatimes.rule=Host(`${DOMAIN:-etheriatimes.com}`)"
+      - "traefik.http.routers.etheriatimes.entrypoints=websecure"
+      - "traefik.http.routers.etheriatimes.tls=true"
+      - "traefik.http.services.etheriatimes.loadbalancer.server.port=3000"
     expose:
+      - "3000"
       - "8080"
       - "5432"
-    ports:
-      - "8000:3000"
     environment:
+      DOMAIN: ${DOMAIN:-etheriatimes.com}
       NODE_ENV: production
       ENVIRONMENT: production
       DB_HOST: localhost
