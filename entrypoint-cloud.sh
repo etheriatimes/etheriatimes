@@ -103,6 +103,10 @@ start_postgres() {
         sleep 1
     done
 
+    log_info "Creating database user and schema..."
+    su - postgres -c "psql -c \"CREATE USER ${DB_USER} WITH PASSWORD '${DB_PASSWORD}' CREATEDB;\"" 2>/dev/null || true
+    su - postgres -c "psql -c \"CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};\"" 2>/dev/null || true
+
     log_success "PostgreSQL started"
     return 0
 }
