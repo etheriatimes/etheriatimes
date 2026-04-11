@@ -126,7 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const state = Math.random().toString(36).substring(2);
     sessionStorage.setItem("oauth_state", state);
 
-    const authUrl = new URL(`${process.env.NEXT_PUBLIC_IDENTITY_API_URL}/oauth/authorize`);
+    const identityApiUrl = process.env.NEXT_PUBLIC_IDENTITY_API_URL || window.location.origin;
+    const authUrl = new URL(`${identityApiUrl}/oauth/authorize`);
     authUrl.searchParams.set("client_id", clientId || "");
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("response_type", "code");
