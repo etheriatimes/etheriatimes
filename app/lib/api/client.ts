@@ -5,11 +5,8 @@ const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  if (isProduction) {
-    return "https://api.etheriatimes.com";
-  }
-  if (isStaging) {
-    return "https://api-staging.etheriatimes.com";
+  if (isProduction || isStaging) {
+    return "https://etheriatimes.com";
   }
   return "http://localhost:8080";
 };
