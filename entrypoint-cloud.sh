@@ -202,6 +202,9 @@ start_api() {
     export SERVER_PORT="$API_PORT"
     export ENVIRONMENT="production"
     export GIN_MODE=release
+    export CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-https://etheriatimes.com,http://localhost:3000}"
+    export JWT_SECRET="${JWT_SECRET:-default-secret-change-in-production}"
+    export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
     ./server/etheriatimes-api &
     API_PID=$!
