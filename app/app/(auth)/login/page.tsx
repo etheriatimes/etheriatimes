@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,13 +39,32 @@ const GoogleIcon = ({ className }: { className?: string }) => (
 );
 
 export default function LoginPage() {
-  const { login, loginWithOAuth } = useAuth();
+  const { login, loginWithOAuth, isAuthenticated, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      let targetEmail = email;
+      if (!targetEmail) {
+        try {
+          const storedUser = localStorage.getItem("user");
+          if (storedUser) {
+            targetEmail = JSON.parse(storedUser).email || "";
+          }
+        } catch {
+          targetEmail = "";
+        }
+      }
+      const isAdmin = targetEmail?.toLowerCase()?.endsWith("@etheriatimes.com");
+      router.push(isAdmin ? "/dashboard" : "/user");
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

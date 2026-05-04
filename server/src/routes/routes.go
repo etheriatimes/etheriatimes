@@ -358,6 +358,8 @@ func SetupRoutes(router *gin.Engine, jwtService *services.JWTService) {
 			docker.POST("/exec", dockerHandler.ExecCommand)
 			docker.GET("/status", dockerHandler.GetStatus)
 			docker.GET("/containers", dockerHandler.ListContainers)
+			docker.POST("/update", dockerHandler.UpdateContainer)
+			docker.GET("/check-updates", dockerHandler.CheckForUpdates)
 		}
 	}
 }
@@ -398,10 +400,27 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		userName = "Demo User"
 	} else {
 		prismaService := services.GetPrismaService()
-		if prismaService != nil {
+		if prismaService == nil {
+			fmt.Printf("\033[1;31m[!] Login: PrismaService is NIL - running in mock mode\033[0m\n")
+		} else {
+			fmt.Printf("[✓] Login: PrismaService available, checking DB for user %s\n", req.Email)
 			etheriaUser, err := prismaService.GetUserByEmail(req.Email)
-			if err == nil && etheriaUser != nil && etheriaUser.IsActive {
-				if checkPasswordHash(req.Password, etheriaUser.Password) {
+			if err != nil {
+				fmt.Printf("[!] Login: GetUserByEmail error: %v\n", err)
+			} else if etheriaUser == nil {
+				fmt.Printf("[!] Login: User not found in DB (email: %s)\n", req.Email)
+			} else if !etheriaUser.IsActive {
+				fmt.Printf("[!] Login: User is inactive\n")
+			} else {
+				fmt.Printf("[*] Login: User found (id: %s, role: %s)\n", etheriaUser.ID, etheriaUser.Role)
+				hashLen := len(etheriaUser.Password)
+				if hashLen > 20 {
+					hashLen = 20
+				}
+				fmt.Printf("[*] Login: Stored hash: %s\n", etheriaUser.Password[:hashLen])
+				passwordMatch := checkPasswordHash(req.Password, etheriaUser.Password)
+				fmt.Printf("[*] Login: Password match result: %v\n", passwordMatch)
+				if passwordMatch {
 					isValid = true
 					userID = etheriaUser.ID
 					userName = strings.TrimSpace(etheriaUser.FirstName + " " + etheriaUser.LastName)
@@ -508,13 +527,83 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 
 func (h *AuthHandler) GetAccount(c *gin.Context) {
 	userID := c.GetString("userID")
-	user := &models.User{
-		ID:     userID,
-		Active: true,
+
+	fmt.Printf("\n====== DEBUG GetAccount START ======\n")
+	fmt.Printf("[DEBUG GetAccount] userID from token: '%s'\n", userID)
+	fmt.Printf("[DEBUG GetAccount] prismaService: %v\n", services.GetPrismaService())
+
+	if userID == "admin-1" {
+		fmt.Printf("[DEBUG GetAccount] Returning admin-1 hardcoded\n")
+		c.JSON(http.StatusOK, models.AuthResponse{
+			Success: true,
+			Data: &models.TokenResponse{
+				User: &models.User{
+					ID:     "admin-1",
+					Email:  defaultAdminEmail,
+					Name:   defaultAdminName,
+					Active: true,
+				},
+			},
+		})
+		return
 	}
+
+	if userID == "demo-1" {
+		fmt.Printf("[DEBUG GetAccount] Returning demo-1 hardcoded\n")
+		c.JSON(http.StatusOK, models.AuthResponse{
+			Success: true,
+			Data: &models.TokenResponse{
+				User: &models.User{
+					ID:     "demo-1",
+					Email:  "demo@etheriatimes.com",
+					Name:   "Demo User",
+					Active: true,
+				},
+			},
+		})
+		return
+	}
+
+	prismaService := services.GetPrismaService()
+	if prismaService == nil {
+		fmt.Printf("[!] GetAccount: PrismaService is nil\n")
+		c.JSON(http.StatusServiceUnavailable, models.AuthResponse{
+			Success: false,
+			Error:   "Database unavailable",
+		})
+		return
+	}
+
+	fmt.Printf("[DEBUG GetAccount] Calling GetUser with userID: '%s'\n", userID)
+	etheriaUser, err := prismaService.GetUser(userID)
+	fmt.Printf("[DEBUG GetAccount] GetUser returned: user=%v, err=%v\n", etheriaUser, err)
+
+	if err != nil || etheriaUser == nil {
+		fmt.Printf("[!] GetAccount: User not found in DB (userID: %s, err: %v)\n", userID, err)
+		c.JSON(http.StatusUnauthorized, models.AuthResponse{
+			Success: false,
+			Error:   "User not found in database",
+		})
+		return
+	}
+
+	fmt.Printf("[DEBUG GetAccount] Found user: ID=%s, Email=%s\n", etheriaUser.ID, etheriaUser.Email)
+
+	userName := strings.TrimSpace(etheriaUser.FirstName + " " + etheriaUser.LastName)
+	if userName == "" {
+		userName = etheriaUser.Email
+	}
+
 	c.JSON(http.StatusOK, models.AuthResponse{
 		Success: true,
-		Data:    &models.TokenResponse{User: user},
+		Data: &models.TokenResponse{
+			User: &models.User{
+				ID:     etheriaUser.ID,
+				Email:  etheriaUser.Email,
+				Name:   userName,
+				Active: etheriaUser.IsActive,
+			},
+		},
 	})
 }
 
@@ -522,6 +611,67 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	var req models.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.AuthResponse{Success: false, Error: "Invalid request: " + err.Error()})
+		return
+	}
+
+	firstName := req.FirstName
+	lastName := req.LastName
+	if firstName == "" && req.Name != "" {
+		parts := strings.SplitN(req.Name, " ", 2)
+		firstName = parts[0]
+		lastName = ""
+		if len(parts) > 1 {
+			lastName = parts[1]
+		}
+	}
+
+	prismaService := services.GetPrismaService()
+	if prismaService != nil {
+		user, err := prismaService.CreateUser(req.Email, firstName, lastName, "", req.Password)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, models.AuthResponse{Success: false, Error: "Failed to create user: " + err.Error()})
+			return
+		}
+
+		emailSettings, _ := prismaService.GetSystemSettings()
+		if emailSettings != nil && emailSettings.SmtpHost != "" {
+			emailService := services.NewEmailService(emailSettings)
+			go emailService.SendWelcomeEmail(req.Email, firstName)
+		}
+
+		userName := strings.TrimSpace(user.FirstName + " " + user.LastName)
+		if userName == "" {
+			userName = user.Email
+		}
+
+		token, err := h.jwtService.GenerateToken(user.ID, "account-1", user.Email, userName)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, models.AuthResponse{Success: false, Error: "Failed to generate token"})
+			return
+		}
+
+		refreshToken, err := h.jwtService.GenerateRefreshToken(user.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, models.AuthResponse{Success: false, Error: "Failed to generate refresh token"})
+			return
+		}
+
+		c.JSON(http.StatusCreated, models.AuthResponse{
+			Success: true,
+			Data: &models.TokenResponse{
+				AccessToken:  token,
+				RefreshToken: refreshToken,
+				TokenType:    "Bearer",
+				ExpiresIn:    86400,
+				User: &models.User{
+					ID:     user.ID,
+					Email:  user.Email,
+					Name:   userName,
+					Active: true,
+				},
+			},
+			Message: "Registration successful",
+		})
 		return
 	}
 
@@ -1509,14 +1659,17 @@ func (h *EtheriaHandlers) DeleteMedia(c *gin.Context) {
 
 // Settings
 func (h *EtheriaHandlers) GetSettings(c *gin.Context) {
-	settings := models.SystemSettings{
-		ID: "1", SiteName: "The Etheria Times", SiteDescription: "L'information au service du citoyen",
-		SiteUrl: "https://etheriatimes.com", Email: "contact@etheriatimes.com", SmtpHost: "smtp.etheriatimes.com",
-		SmtpPort: 587, SmtpUser: "noreply@etheriatimes.com", FromName: "The Etheria Times", FromEmail: "noreply@etheriatimes.com",
-		MaintenanceMode: false, RegistrationOpen: true, CommentsEnabled: true, NewsletterEnabled: true,
-		AnalyticsEnabled: true, SslEnforced: true, DockerImage: "etheriatimes/etheriatimes:latest", Version: "1.0.0",
+	prismaService := services.GetPrismaService()
+	if prismaService != nil {
+		settings, err := prismaService.GetSystemSettings()
+		if err == nil {
+			c.JSON(http.StatusOK, models.ApiResponse{Success: true, Data: settings})
+			return
+		}
+		fmt.Printf("[!] GetSettings error: %v\n", err)
 	}
-	c.JSON(http.StatusOK, models.ApiResponse{Success: true, Data: settings})
+
+	c.JSON(http.StatusServiceUnavailable, models.ApiResponse{Success: false, Error: "Database unavailable"})
 }
 
 func (h *EtheriaHandlers) UpdateSettings(c *gin.Context) {
@@ -1525,12 +1678,56 @@ func (h *EtheriaHandlers) UpdateSettings(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ApiResponse{Success: false, Error: err.Error()})
 		return
 	}
-	settings := models.SystemSettings{SiteName: req.SiteName}
-	c.JSON(http.StatusOK, models.ApiResponse{Success: true, Data: settings})
+
+	prismaService := services.GetPrismaService()
+	if prismaService != nil {
+		settings, err := prismaService.UpdateSystemSettings(&req)
+		if err == nil {
+			c.JSON(http.StatusOK, models.ApiResponse{Success: true, Data: settings})
+			return
+		}
+		fmt.Printf("[!] UpdateSettings error: %v\n", err)
+	}
+
+	c.JSON(http.StatusServiceUnavailable, models.ApiResponse{Success: false, Error: "Database unavailable"})
 }
 
 func (h *EtheriaHandlers) TestEmailConfig(c *gin.Context) {
-	c.JSON(http.StatusOK, models.ApiResponse{Success: true, Message: "Email de test envoyé"})
+	var req struct {
+		Email string `json:"email"`
+	}
+	c.ShouldBindJSON(&req)
+
+	prismaService := services.GetPrismaService()
+	if prismaService == nil {
+		c.JSON(http.StatusServiceUnavailable, models.ApiResponse{Success: false, Error: "Database unavailable"})
+		return
+	}
+
+	settings, err := prismaService.GetSystemSettings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ApiResponse{Success: false, Error: "Failed to get settings"})
+		return
+	}
+
+	if settings.SmtpHost == "" {
+		c.JSON(http.StatusBadRequest, models.ApiResponse{Success: false, Error: "SMTP not configured"})
+		return
+	}
+
+	emailService := services.NewEmailService(settings)
+	testEmail := req.Email
+	if testEmail == "" {
+		testEmail = settings.Email
+	}
+
+	err = emailService.SendEmail(testEmail, "Test - The Etheria Times", "Cet email est un test de configuration SMTP.")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ApiResponse{Success: false, Error: "Failed to send email: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.ApiResponse{Success: true, Message: "Email de test envoyé à " + testEmail})
 }
 
 // Admin Users
@@ -1545,15 +1742,15 @@ func (h *EtheriaHandlers) ListUsers(c *gin.Context) {
 	prismaService := services.GetPrismaService()
 	if prismaService != nil {
 		users, total, err := prismaService.ListUsers(search, page, pageSize)
-		if err == nil && len(users) > 0 {
+		if err == nil {
 			totalPages := (total + pageSize - 1) / pageSize
 			c.JSON(http.StatusOK, models.PaginatedResponse{Data: users, Total: total, Page: page, PageSize: pageSize, TotalPages: totalPages})
 			return
 		}
+		fmt.Printf("\033[1;31m[!] ListUsers error: %v\033[0m\n", err)
 	}
 
-	users := []models.EtheriaUser{{ID: "1", Email: "admin@etheriatimes.com", FirstName: "Admin", LastName: "User", Role: models.RoleAdmin, IsActive: true}}
-	c.JSON(http.StatusOK, models.PaginatedResponse{Data: users, Total: 1, Page: 1, PageSize: 10, TotalPages: 1})
+	c.JSON(http.StatusServiceUnavailable, models.PaginatedResponse{Data: []models.EtheriaUser{}, Total: 0, Page: 1, PageSize: 10, TotalPages: 0})
 }
 
 func (h *EtheriaHandlers) GetUser(c *gin.Context) {
@@ -1568,8 +1765,7 @@ func (h *EtheriaHandlers) GetUser(c *gin.Context) {
 		}
 	}
 
-	user := models.EtheriaUser{ID: id, Email: "user@example.com", FirstName: "John", LastName: "Doe", Role: models.RoleUser, IsActive: true}
-	c.JSON(http.StatusOK, models.ApiResponse{Success: true, Data: user})
+	c.JSON(http.StatusNotFound, models.ApiResponse{Success: false, Error: "User not found"})
 }
 
 func (h *EtheriaHandlers) CreateUser(c *gin.Context) {
@@ -2768,6 +2964,98 @@ func (h *DockerHandler) ListContainers(c *gin.Context) {
 	c.JSON(http.StatusOK, models.ApiResponse{
 		Success: true,
 		Data:    containers,
+	})
+}
+
+type DockerUpdateRequest struct {
+	Image string `json:"image"`
+}
+
+func (h *DockerHandler) UpdateContainer(c *gin.Context) {
+	var req DockerUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		req.Image = "etheriatimes:latest"
+	}
+
+	image := req.Image
+	if image == "" {
+		image = "etheriatimes:latest"
+	}
+
+	projectDir := "/home/liam/Bureau/etheriatimes/etheriatimes"
+
+	cmd := exec.Command("docker", "compose", "pull", image)
+	cmd.Dir = projectDir
+	var pullOut, pullErr bytes.Buffer
+	cmd.Stdout = &pullOut
+	cmd.Stderr = &pullErr
+	pullErr2 := cmd.Run()
+
+	pullOutput := pullOut.String()
+	if pullErr.Len() > 0 {
+		pullOutput += "\n" + pullErr.String()
+	}
+
+	if pullErr2 != nil {
+		cmd = exec.Command("docker", "pull", image)
+		var out, err bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &err
+		cmd.Run()
+		pullOutput = out.String()
+		if err.Len() > 0 {
+			pullOutput += "\n" + err.String()
+		}
+	}
+
+	cmd = exec.Command("docker", "compose", "up", "-d", "--build", "--no-cache")
+	cmd.Dir = projectDir
+	var upOut, upErr bytes.Buffer
+	cmd.Stdout = &upOut
+	cmd.Stderr = &upErr
+	upErr2 := cmd.Run()
+
+	upOutput := upOut.String()
+	if upErr.Len() > 0 {
+		upOutput += "\n" + upErr.String()
+	}
+
+	success := upErr2 == nil
+	message := "Mise à jour terminée"
+	if !success {
+		message = "Erreur lors de la mise à jour: " + upOutput
+	}
+
+	c.JSON(http.StatusOK, models.ApiResponse{
+		Success: success,
+		Message: message,
+		Data: gin.H{
+			"pullOutput": pullOutput,
+			"upOutput":   upOutput,
+		},
+	})
+}
+
+func (h *DockerHandler) CheckForUpdates(c *gin.Context) {
+	currentImage := "etheriatimes:latest"
+	projectDir := "/home/liam/Bureau/etheriatimes/etheriatimes"
+
+	cmd := exec.Command("docker", "compose", "pull", "--dry-run", currentImage)
+	cmd.Dir = projectDir
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	cmd.Run()
+
+	hasUpdate := strings.Contains(out.String(), "Would pull") || strings.Contains(out.String(), "newer image")
+
+	c.JSON(http.StatusOK, models.ApiResponse{
+		Success: true,
+		Data: gin.H{
+			"hasUpdate":    hasUpdate,
+			"currentImage": currentImage,
+			"message":      "Vérification terminée",
+		},
 	})
 }
 

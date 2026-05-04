@@ -32,7 +32,21 @@ const categories = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState("");
+  const [mounted, setMounted] = useState(false);
   const { locale } = useLocale();
+
+  useEffect(() => {
+    setMounted(true);
+    setCurrentDate(
+      new Date().toLocaleDateString("fr-FR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    );
+  }, []);
 
   const getLocaleHref = (href: string) => {
     if (href === "/") return `/${locale}`;
@@ -42,7 +56,7 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   useEffect(() => {
     if (searchOpen && searchInputRef.current) {
@@ -78,12 +92,7 @@ export function Header() {
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
             <span className="text-xs text-muted-foreground hidden md:block capitalize">
-              {new Date().toLocaleDateString("fr-FR", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
+              {currentDate}
             </span>
           </div>
 
@@ -131,13 +140,26 @@ export function Header() {
             {/* Account Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:flex">
-                  <User className="h-4 w-4" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 hidden sm:flex"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <User className="h-4 w-4" />
+                  )}
                   <span className="sr-only">Mon compte</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {isAuthenticated && user ? (
+                {isLoading ? (
+                  <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                    Chargement...
+                  </div>
+                ) : isAuthenticated && user ? (
                   <>
                     <div className="px-2 py-1.5 border-b">
                       <p className="text-sm font-medium truncate">{user.name || user.email}</p>

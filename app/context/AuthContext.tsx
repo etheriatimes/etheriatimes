@@ -32,8 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
-      const storedUser = authApi.getStoredUser();
+      const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+      const storedUser = typeof window !== "undefined" ? authApi.getStoredUser() : null;
 
       console.log(
         "[AuthContext] checkAuth - storedUser:",
@@ -44,8 +44,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (token && token.length > 0 && token !== "undefined" && token !== "null") {
         if (storedUser) {
-          console.log("[AuthContext] Setting user from stored data");
-          setUser(storedUser);
+          console.log("[AuthContext] Token exists, verifying with API...");
+          try {
+            const accountResponse = await authApi.getAccount();
+            if (accountResponse.success && accountResponse.data?.user) {
+              authApi.storeUser(accountResponse.data.user);
+              setUser(accountResponse.data.user);
+            } else {
+              console.log("[AuthContext] API verification returned error, clearing session");
+              authApi.clearTokens();
+              authApi.clearUser();
+              setUser(null);
+            }
+          } catch (e) {
+            console.error("[AuthContext] API verification error:", e);
+            authApi.clearTokens();
+            authApi.clearUser();
+            setUser(null);
+          }
         } else {
           console.log("[AuthContext] Token exists but no stored user, fetching account");
           try {
@@ -54,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               authApi.storeUser(accountResponse.data.user);
               setUser(accountResponse.data.user);
             } else {
-              console.log("[AuthContext] Could not fetch account, clearing invalid session");
+              console.log("[AuthContext] Could not fetch account, clearing session");
               authApi.clearTokens();
               authApi.clearUser();
               setUser(null);

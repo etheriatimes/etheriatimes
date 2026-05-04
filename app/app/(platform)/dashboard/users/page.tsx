@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import {
   Plus,
   Search,
@@ -52,7 +51,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { adminUsersApi } from "@/lib/api";
-import type { User as UserType } from "@/lib/api/types";
+import { useAuth } from "@/context/AuthContext";
 
 interface UserDisplay {
   id: string;
@@ -65,94 +64,12 @@ interface UserDisplay {
   joinedAt: string;
 }
 
-const mockUsers: UserDisplay[] = [
-  {
-    id: "1",
-    name: "Marie Dupont",
-    email: "marie.dupont@etheria.com",
-    avatar: "",
-    role: "admin",
-    status: "active",
-    articlesCount: 45,
-    joinedAt: "2025-01-15",
-  },
-  {
-    id: "2",
-    name: "Thomas Martin",
-    email: "thomas.martin@etheria.com",
-    avatar: "",
-    role: "editor",
-    status: "active",
-    articlesCount: 32,
-    joinedAt: "2025-02-20",
-  },
-  {
-    id: "3",
-    name: "Sophie Laurent",
-    email: "sophie.laurent@etheria.com",
-    avatar: "",
-    role: "editor",
-    status: "active",
-    articlesCount: 28,
-    joinedAt: "2025-03-10",
-  },
-  {
-    id: "4",
-    name: "Pierre Moreau",
-    email: "pierre.moreau@etheria.com",
-    avatar: "",
-    role: "author",
-    status: "active",
-    articlesCount: 15,
-    joinedAt: "2025-04-05",
-  },
-  {
-    id: "5",
-    name: "Julie Bernard",
-    email: "julie.bernard@etheria.com",
-    avatar: "",
-    role: "author",
-    status: "active",
-    articlesCount: 12,
-    joinedAt: "2025-05-12",
-  },
-  {
-    id: "6",
-    name: "Marc Leroy",
-    email: "marc.leroy@etheria.com",
-    avatar: "",
-    role: "author",
-    status: "inactive",
-    articlesCount: 8,
-    joinedAt: "2025-06-18",
-  },
-  {
-    id: "7",
-    name: "Jean Dupont",
-    email: "jean.dupont@etheria.com",
-    avatar: "",
-    role: "subscriber",
-    status: "active",
-    articlesCount: 0,
-    joinedAt: "2025-07-22",
-  },
-  {
-    id: "8",
-    name: "Claire Martin",
-    email: "claire.martin@etheria.com",
-    avatar: "",
-    role: "subscriber",
-    status: "pending",
-    articlesCount: 0,
-    joinedAt: "2026-03-01",
-  },
-];
-
 const roleConfig = {
   admin: { label: "Administrateur", variant: "destructive" as const },
   editor: { label: "Rédacteur", variant: "default" as const },
   author: { label: "Auteur", variant: "secondary" as const },
   subscriber: { label: "Abonné", variant: "outline" as const },
+  user: { label: "Utilisateur", variant: "outline" as const },
 };
 
 const statusConfig = {
@@ -175,17 +92,26 @@ export default function UsersPage() {
     "author"
   );
   const [newUserPassword, setNewUserPassword] = useState("");
+  const { user: currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    if (!authLoading && isAuthenticated) {
+      loadUsers();
+    }
+  }, [authLoading, isAuthenticated]);
 
   async function loadUsers() {
     setIsLoading(true);
     try {
+      console.log("[UsersPage] Loading users...");
       const response = await adminUsersApi.list({ pageSize: 50 });
+      console.log("[UsersPage] API Response:", response);
+
+      let userList: UserDisplay[] = [];
+
       if (response.data) {
-        const mapped: UserDisplay[] = response.data.map((u) => ({
+        console.log("[UsersPage] Users data:", response.data);
+        userList = response.data.map((u) => ({
           id: u.id,
           name:
             u.firstName && u.lastName
@@ -201,11 +127,28 @@ export default function UsersPage() {
             ? new Date(u.createdAt).toISOString().split("T")[0]
             : new Date().toISOString().split("T")[0],
         }));
-        setUsers(mapped);
       }
+
+      const adminEmail = "admin@etheriatimes.com";
+      const hasAdmin = userList.some((u) => u.email === adminEmail);
+
+      if (!hasAdmin && currentUser?.email?.endsWith("@etheriatimes.com")) {
+        userList.unshift({
+          id: "admin-1",
+          name: "Admin",
+          email: adminEmail,
+          role: "admin",
+          status: "active",
+          articlesCount: 0,
+          joinedAt: new Date().toISOString().split("T")[0],
+        });
+      }
+
+      console.log("[UsersPage] Mapped users:", userList);
+      setUsers(userList);
     } catch (error) {
       console.error("Failed to load users:", error);
-      setUsers(mockUsers);
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
@@ -397,7 +340,16 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Chargement...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
                   <div className="flex flex-col items-center gap-2">

@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { settingsApi } from "@/lib/api";
+import { dockerApi } from "@/lib/api/docker";
 import type { SystemSettings } from "@/lib/api/types";
 
 export default function SettingsPage() {
@@ -36,12 +37,21 @@ export default function SettingsPage() {
 
   const [email, setEmail] = useState({
     smtpHost: "",
-    smtpPort: "",
+    smtpPort: "587",
     smtpUser: "",
     smtpPassword: "",
     fromName: "",
     fromEmail: "",
   });
+
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [testEmailSending, setTestEmailSending] = useState(false);
+
+  const [dockerImage, setDockerImage] = useState("etheriatimes:latest");
+  const [currentVersion] = useState("1.0.0");
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [hasUpdate, setHasUpdate] = useState(false);
 
   const [settings, setSettings] = useState({
     maintenanceMode: false,
@@ -67,6 +77,14 @@ export default function SettingsPage() {
           siteDescription: data.siteDescription || "",
           siteUrl: data.siteUrl || "",
           email: data.email || "",
+        });
+        setEmail({
+          smtpHost: data.smtpHost || "",
+          smtpPort: String(data.smtpPort || "587"),
+          smtpUser: data.smtpUser || "",
+          smtpPassword: "",
+          fromName: data.fromName || "",
+          fromEmail: data.fromEmail || "",
         });
         setSettings({
           maintenanceMode: data.maintenanceMode ?? false,
@@ -109,6 +127,42 @@ export default function SettingsPage() {
       console.error("Failed to save settings:", error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCheckUpdates = async () => {
+    setCheckingUpdate(true);
+    try {
+      const result = await dockerApi.checkForUpdates();
+      setHasUpdate(result.hasUpdate);
+      if (!result.hasUpdate) {
+        alert("Vous êtes à jour !");
+      }
+    } catch (error) {
+      console.error("Failed to check updates:", error);
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!confirm("Êtes-vous sûr de vouloir mettre à jour ? Les données seront préservées.")) {
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const result = await dockerApi.updateContainer(dockerImage);
+      if (result.success) {
+        alert("Mise à jour terminée avec succès !");
+      } else {
+        alert("Erreur: " + result.message);
+      }
+    } catch (error) {
+      console.error("Failed to update:", error);
+      alert("Erreur lors de la mise à jour");
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -400,12 +454,20 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={handleCheckUpdates} disabled={checkingUpdate}>
+              {checkingUpdate ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
               Vérifier les mises à jour
             </Button>
-            <Button>
-              <Cloud className="h-4 w-4 mr-2" />
+            <Button onClick={handleUpdate} disabled={updating}>
+              {updating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Cloud className="h-4 w-4 mr-2" />
+              )}
               Mettre à jour maintenant
             </Button>
           </div>

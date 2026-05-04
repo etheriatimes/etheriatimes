@@ -47,9 +47,11 @@ func main() {
 
 	cfg := config.Load()
 
+	fmt.Printf("\033[1;36m[*] DB URL being used: %s\033[0m\n", cfg.Database.URL)
+
 	prismaService, err := services.NewPrismaService(cfg)
 	if err != nil {
-		fmt.Printf("\033[1;33m[!] Warning: Database connection failed: %v\033[0m\n", err)
+		fmt.Printf("\033[1;31m[!] Warning: Database connection failed: %v\033[0m\n", err)
 		fmt.Printf("\033[1;33m[!] Running in mock mode\033[0m\n")
 	} else {
 		fmt.Printf("\033[1;32m[✓] Database connected\033[0m\n")

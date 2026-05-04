@@ -27,6 +27,9 @@ testdir = "/app"
   send_interrupt        = true
   stop_on_error         = false
 
+[env]
+  DATABASE_URL = "postgresql://aether:password@db:5432/etheria_account"
+
 [color]
   app   = ""
   build = "yellow"

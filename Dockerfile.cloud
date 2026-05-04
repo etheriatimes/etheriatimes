@@ -18,11 +18,11 @@ RUN CGO_ENABLED=1 GOOS=linux \
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage 2 — Node.js / pnpm (Next.js Build)
 # ══════════════════════════════════════════════════════════════════════════════
-FROM node:20-alpine AS node-builder
+FROM node:25-alpine AS node-builder
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN npm install -g corepack --force && corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 COPY app/package.json app/pnpm-lock.yaml* ./
 
@@ -39,7 +39,7 @@ RUN cd /app/prisma && npm install --silent && npx prisma generate
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage final — Image de production (Single Container)
 # ══════════════════════════════════════════════════════════════════════════════
-FROM alpine:3.19
+FROM alpine:3.23
 
 # ── Base Dependencies ─────────────────────────────────────────────────────────
 RUN apk add --no-cache \
@@ -49,15 +49,19 @@ RUN apk add --no-cache \
     bash \
     git \
     wget \
-    nodejs \
-    npm \
+    build-base \
+    libc6-compat \
+    docker-cli \
+    postgresql \
     postgresql-client \
     openssl
-
 # ── PostgreSQL (Embedded) ───────────────────────────────────────────────────
 RUN apk add --no-cache postgresql16 postgresql16-client && \
     mkdir -p /var/lib/postgresql/data /var/lib/postgresql/logs && \
     chown -R postgres:postgres /var/lib/postgresql
+
+# ── Node.js ───────────────────────────────────────────────────────────────────────
+RUN apk add --no-cache nodejs npm
 
 # ── pnpm (pour Next.js) ───────────────────────────────────────────────────────
 RUN npm install -g pnpm@9.15.4

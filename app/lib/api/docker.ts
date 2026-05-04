@@ -70,6 +70,40 @@ class DockerApi {
       return { running: false, uptime: "Unknown" };
     }
   }
+
+  async checkForUpdates(): Promise<{ hasUpdate: boolean; currentImage: string }> {
+    try {
+      const response = await this.client.get<{
+        success: boolean;
+        data: { hasUpdate: boolean; currentImage: string };
+      }>(`/api/v1/docker/check-updates`);
+      return {
+        hasUpdate: response.data?.hasUpdate ?? false,
+        currentImage: response.data?.currentImage ?? "etheriatimes:latest",
+      };
+    } catch {
+      return { hasUpdate: false, currentImage: "etheriatimes:latest" };
+    }
+  }
+
+  async updateContainer(
+    image: string = "etheriatimes:latest"
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await this.client.post<{ success: boolean; message: string }>(
+        `/api/v1/docker/update`,
+        {
+          image,
+        }
+      );
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to update",
+      };
+    }
+  }
 }
 
 export const dockerApi = new DockerApi();

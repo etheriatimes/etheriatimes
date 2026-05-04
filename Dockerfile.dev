@@ -19,11 +19,11 @@ RUN mkdir -p /app/tmp && go build -o /app/tmp/aether-server ./server/
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage 2 — Node.js / pnpm
 # ══════════════════════════════════════════════════════════════════════════════
-FROM node:20-alpine AS node-builder
+FROM node:25-alpine AS node-builder
 
 WORKDIR /app/app
 
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+RUN npm install -g corepack --force && corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 COPY app/package.json app/pnpm-lock.yaml* ./
 
@@ -32,7 +32,7 @@ RUN pnpm install --ignore-scripts
 # ══════════════════════════════════════════════════════════════════════════════
 # Stage final
 # ══════════════════════════════════════════════════════════════════════════════
-FROM node:20-alpine
+FROM node:25-alpine
 
 RUN apk add --no-cache \
     ca-certificates \
@@ -44,6 +44,7 @@ RUN apk add --no-cache \
     build-base \
     libc6-compat \
     docker-cli \
+    postgresql \
     postgresql-client \
     openssl
 
@@ -63,7 +64,7 @@ ENV GOPATH="/go"
 ENV PATH="${PATH}:/root/.local/share/corepack"
 
 # ── pnpm (requis pour lancer next dev) ───────────────────────────────────────
-RUN corepack enable && corepack prepare pnpm@9.15.4 --activate && \
+RUN npm install -g corepack --force && corepack enable && corepack prepare pnpm@9.15.4 --activate && \
     ln -sf /root/.local/share/corepack/pnpm /usr/local/bin/pnpm
 
 WORKDIR /app
@@ -85,7 +86,7 @@ COPY app/next.config.ts       ./app/
 COPY app/postcss.config.mjs   ./app/
 COPY app/components.json      ./app/
 COPY app/eslint.config.mjs    ./app/
-COPY app/middleware.ts        ./app/
+COPY app/proxy.ts             ./app/
 COPY app/app/                 ./app/app/
 COPY app/components/          ./app/components/
 COPY app/config/              ./app/config/

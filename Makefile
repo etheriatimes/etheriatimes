@@ -77,9 +77,13 @@ dev-logs:
 	docker compose -f docker-compose.dev.yml logs -f
 
 dev-rebuild:
+	@echo "Stopping containers (preserving volumes)..."
 	docker compose -f docker-compose.dev.yml down
+	@echo "Building image..."
 	docker build --no-cache -f Dockerfile.dev -t $(APP_NAME):latest .
+	@echo "Starting containers..."
 	docker compose -f docker-compose.dev.yml up -d
+	@echo "Done! Data preserved in volume 'postgres_data'"
 
 cloud-up:
 	docker compose -f docker-compose.cloud.yml up -d
