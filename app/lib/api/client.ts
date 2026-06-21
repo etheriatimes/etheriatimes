@@ -405,10 +405,15 @@ export const articlesApi = {
 
   toggleFeatured: (id: string) => apiClient.post<ArticleResponse>(`/api/v1/articles/${id}/feature`),
 
-  getHomepage: (locale: string = "fr") =>
-    apiClient.get<HomepageArticlesResponse>(`/api/v1/articles/homepage`, {
+  getHomepage: (locale: string = "fr") => {
+    if (process.env.BUILD_WEB_STATIC === "true") {
+      return Promise.resolve({ success: false } satisfies HomepageArticlesResponse);
+    }
+
+    return apiClient.get<HomepageArticlesResponse>(`/api/v1/articles/homepage`, {
       params: { locale },
-    }),
+    });
+  },
 
   getBySection: (section: string, locale: string = "fr", limit?: number) => {
     const queryParams: Record<string, string> = { locale };

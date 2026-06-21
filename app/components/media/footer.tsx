@@ -12,6 +12,10 @@ interface FooterLinkGroup {
 }
 
 async function getFooterLinks(locale: string): Promise<Record<string, FooterLinkGroup>> {
+  if (process.env.BUILD_WEB_STATIC === "true") {
+    return getDefaultFooterLinks(locale);
+  }
+
   const prefix = `/${locale}`;
 
   try {

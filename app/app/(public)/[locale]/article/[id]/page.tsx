@@ -1,6 +1,3 @@
-"use client";
-
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Clock, User, Eye, Share2 } from "lucide-react";
@@ -9,6 +6,7 @@ import { Header } from "@/components/media/header";
 import { Footer } from "@/components/media/footer";
 import { ArticleCard } from "@/components/media/article-card";
 import { Button } from "@/components/ui/button";
+import { routing } from "@/i18n/routing";
 
 interface Article {
   id: string;
@@ -196,9 +194,21 @@ const relatedArticles = [
   },
 ];
 
-export default function ArticleDetailPage() {
-  const params = useParams();
-  const id = params.id as string;
+export function generateStaticParams() {
+  return routing.locales.flatMap((locale) =>
+    Object.keys(articles).map((id) => ({
+      locale,
+      id,
+    }))
+  );
+}
+
+export default async function ArticleDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string; locale: string }>;
+}) {
+  const { id } = await params;
   const article = articles[id];
 
   if (!article) {
