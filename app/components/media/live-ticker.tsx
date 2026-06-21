@@ -20,7 +20,7 @@ export function LiveTicker({ items }: LiveTickerProps) {
     <div className="bg-muted border-y border-border">
       <div className="mx-auto max-w-7xl px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Circle className="h-2 w-2 fill-primary text-primary animate-pulse" />
             <span className="text-xs font-bold text-primary uppercase tracking-wide">En continu</span>
           </div>
@@ -31,7 +31,7 @@ export function LiveTicker({ items }: LiveTickerProps) {
                 <Link
                   key={item.id}
                   href={item.href}
-                  className="flex items-center gap-2 flex-shrink-0 group"
+                  className="flex items-center gap-2 shrink-0 group"
                 >
                   <span className="text-xs text-muted-foreground">{item.time}</span>
                   <span className="text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1">
