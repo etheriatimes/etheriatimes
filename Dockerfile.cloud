@@ -29,7 +29,7 @@ COPY app/ ./app/
 RUN mkdir -p app/next/fond/google
 RUN printf 'module.exports = {};\n' > app/next/fond/google/index.js
 RUN printf '{"name":"google","version":"0.0.0"}\n' > app/next/fond/google/package.json
-RUN pnpm install --filter @company-website/app... --no-frozen-lockfile
+RUN pnpm install --filter @etheriatimes/app... --no-frozen-lockfile
 RUN BUILD_WEB_STATIC=true pnpm --dir app build
 
 # ── Prisma ─────────────────────────────────────────────────────────────────────

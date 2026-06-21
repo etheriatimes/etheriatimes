@@ -1,7 +1,7 @@
 package interfaces
 
 import (
-	"github.com/skygenesisenterprise/company-website/server/src/models"
+	"github.com/etheriatimes/etheriatimes/server/src/models"
 )
 
 type POP3Client interface {

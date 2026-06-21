@@ -212,7 +212,7 @@ func Load() *Config {
 		Port:           getEnv("REDIS_PORT", "6379"),
 		Password:       getEnv("REDIS_PASSWORD", ""),
 		DB:             getEnvInt("REDIS_DB", 0),
-		KeyPrefix:      getEnv("REDIS_KEY_PREFIX", "company-website:v1"),
+		KeyPrefix:      getEnv("REDIS_KEY_PREFIX", "etheriatimes:v1"),
 		DefaultTTL:     getEnvInt("REDIS_DEFAULT_TTL", 300),
 		ConnectTimeout: getEnvInt("REDIS_CONNECT_TIMEOUT", 5),
 		ReadTimeout:    getEnvInt("REDIS_READ_TIMEOUT", 3),

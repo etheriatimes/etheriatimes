@@ -8,7 +8,7 @@ type KeyBuilder struct {
 
 func NewKeyBuilder(prefix string) *KeyBuilder {
 	if prefix == "" {
-		prefix = "company-website:v1"
+		prefix = "etheriatimes:v1"
 	}
 	return &KeyBuilder{prefix: prefix}
 }

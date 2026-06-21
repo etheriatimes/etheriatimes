@@ -122,7 +122,7 @@ configure_runtime() {
     export SERVER_PORT="${SERVER_PORT:-${API_PORT}}"
     export REDIS_PORT="${REDIS_PORT:-6379}"
     export REDIS_DB="${REDIS_DB:-0}"
-    export REDIS_KEY_PREFIX="${REDIS_KEY_PREFIX:-company-website:v1}"
+    export REDIS_KEY_PREFIX="${REDIS_KEY_PREFIX:-etheriatimes:v1}"
     export REDIS_ENABLED="${REDIS_ENABLED:-true}"
     export REDIS_REQUIRED="${REDIS_REQUIRED:-false}"
     export GIN_MODE="${GIN_MODE:-release}"

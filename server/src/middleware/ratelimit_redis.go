@@ -40,7 +40,7 @@ func NewRedisRateLimiter(client *redis.Client, limit int, window time.Duration, 
 
 	rl := &RedisRateLimiter{
 		client:    client,
-		keyPrefix: "company-website:v1:ratelimit",
+		keyPrefix: "etheriatimes:v1:ratelimit",
 		limit:     limit,
 		window:    window,
 		makeKey: func(ctx *gin.Context) string {

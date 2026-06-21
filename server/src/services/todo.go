@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/skygenesisenterprise/company-website/server/src/models"
+	"github.com/etheriatimes/etheriatimes/server/src/models"
 )
 
 type TodoService struct {

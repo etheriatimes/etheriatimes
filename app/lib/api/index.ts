@@ -53,5 +53,4 @@ export {
   mediaApi,
   settingsApi,
   adminUsersApi,
-  dockerApi,
 } from "./client";
