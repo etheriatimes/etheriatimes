@@ -6,23 +6,20 @@ services:
       - --loglevel
       - warning
       - --requirepass
-      - "${REDIS_PASSWORD:-redis-default-password}"
+      - ${REDIS_PASSWORD:-redis-default-password}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"${REDIS_PASSWORD:-redis-default-password}\" ping | grep PONG"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
       start_period: 20s
       interval: 30s
       retries: 5
       timeout: 3s
     volumes:
-      - redis:/data
+      - redis-data:/data
     expose:
-      - 6379
-    environment: 
+      - "6379"
+    environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redis-default-password}
-      REDIS_URL: redis://default:${REDIS_PASSWORD:-redis-default-password}@redis:6379/0
-      REDIS_KEY_PREFIX: etheriatimes:v1
-      DATABASE_URL: ${DATABASE_URL}
 
   server:
     build:
@@ -32,17 +29,20 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    expose:
-      - 3000
-      - 8080
     command: server
+    expose:
+      - "3000"
+      - "8080"
     environment:
       NODE_ENV: production
       USE_EMBEDDED_DB: "false"
-      LISTEN__TRUSTED_PROXY_CIDRS: 0.0.0.0/0,::/0
+
       HOST: ${DOMAIN_HOST:-localhost}
-      FRONTEND_PORT: 3000
-      API_PORT: 8080
+      FRONTEND_PORT: "3000"
+      API_PORT: "8080"
+
+      LISTEN__TRUSTED_PROXY_CIDRS: 0.0.0.0/0,::/0
+
       REDIS_ENABLED: "true"
       REDIS_REQUIRED: "false"
       REDIS_HOST: redis
@@ -51,15 +51,20 @@ services:
       REDIS_DB: "0"
       REDIS_URL: redis://default:${REDIS_PASSWORD:-redis-default-password}@redis:6379/0
       REDIS_KEY_PREFIX: etheriatimes:v1
-      REDIS_DEFAULT_TTL: 300
+      REDIS_DEFAULT_TTL: "300"
+
       DATABASE_URL: ${DATABASE_URL}
+
+      MEDIA_DIR: /app/data/media
+      CERTS_DIR: /app/data/certs
+      TEMPLATES_DIR: /app/data/templates
     volumes:
-      - media:/media
-      - certs:/certs
-      - custom-templates:/templates
+      - app-media:/app/data/media
+      - app-certs:/app/data/certs
+      - app-templates:/app/data/templates
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
 
   worker:
     build:
@@ -69,13 +74,15 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    expose:
-      - 8080
     command: worker
+    expose:
+      - "8080"
     environment:
       NODE_ENV: production
       USE_EMBEDDED_DB: "false"
+
       HOST: ${DOMAIN_HOST:-localhost}
+
       REDIS_ENABLED: "true"
       REDIS_REQUIRED: "false"
       REDIS_HOST: redis
@@ -84,17 +91,22 @@ services:
       REDIS_DB: "0"
       REDIS_URL: redis://default:${REDIS_PASSWORD:-redis-default-password}@redis:6379/0
       REDIS_KEY_PREFIX: etheriatimes:v1
+
       DATABASE_URL: ${DATABASE_URL}
+
+      MEDIA_DIR: /app/data/media
+      CERTS_DIR: /app/data/certs
+      TEMPLATES_DIR: /app/data/templates
     volumes:
-      - media:/media
-      - certs:/certs
-      - custom-templates:/templates
+      - app-media:/app/data/media
+      - app-certs:/app/data/certs
+      - app-templates:/app/data/templates
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
-  redis:
-  media:
-  certs:
-  custom-templates:
+  redis-data:
+  app-media:
+  app-certs:
+  app-templates:
